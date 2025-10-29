@@ -50,3 +50,8 @@ env/
 
 # uv
 uv.lock
+
+# Generated outputs
+output/
+output-*/
+
