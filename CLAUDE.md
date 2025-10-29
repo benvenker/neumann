@@ -21,6 +21,7 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 ### Current Structure (Single Script)
 ```
 neumann/
+├── .beads/                  # Beads issue tracking (git-tracked)
 ├── render_to_webp.py       # Main CLI script
 ├── pyproject.toml           # Modern Python project config (PEP 621)
 ├── .python-version          # Python 3.13.2
@@ -112,6 +113,83 @@ Alternatives considered:
 - Easy to append new tiles
 - Simple to import into databases
 - Still human-readable (unlike binary formats)
+
+## Project Management
+
+### Issue Tracking with Beads
+
+**IMPORTANT**: This project uses **Beads (bd)** for issue tracking and project management, NOT GitHub Issues or other systems.
+
+#### Why Beads?
+- Local-first issue tracking (lives in `.beads/` directory)
+- Git-based synchronization
+- Dependency tracking between issues
+- AI-friendly CLI and MCP integration
+- Lightweight and fast
+
+#### Beads MCP Tools
+
+Use these MCP tools for issue management (available via `mcp__plugin_beads_beads__*`):
+- `set_context`: Set workspace root (call this first!)
+- `list`: List issues with filters (status, priority, type, assignee)
+- `show`: Show detailed issue information
+- `create`: Create new issues (bug, feature, task, epic, chore)
+- `update`: Update issue status, priority, description, etc.
+- `close`: Mark issues as completed
+- `ready`: Find tasks with no blockers (ready to work on)
+- `blocked`: Show blocked issues and their dependencies
+- `dep`: Add dependencies between issues
+- `stats`: Get project statistics
+
+#### Workflow
+
+1. **Starting new work**:
+   ```bash
+   # Initialize beads (first time only)
+   /beads:init nm
+
+   # Find ready tasks
+   /beads:ready
+
+   # Create new issue
+   /beads:create "Add ChromaDB integration" feature 2
+   ```
+
+2. **Working on issues**:
+   ```bash
+   # Claim and start work
+   /beads:update nm-123 --status in_progress --assignee ProductThor
+
+   # Show details
+   /beads:show nm-123
+   ```
+
+3. **Completing work**:
+   ```bash
+   # Close issue
+   /beads:close nm-123 "Implemented and tested"
+
+   # Check stats
+   /beads:stats
+   ```
+
+4. **Managing dependencies**:
+   ```bash
+   # nm-124 blocks nm-125
+   /beads:dep blocks nm-124 nm-125
+
+   # Find blocked issues
+   /beads:blocked
+   ```
+
+#### Integration with AI Workflow
+
+When working on this project:
+- **Always check `/beads:ready`** before starting new work
+- **Create issues** for bugs, features, or tasks you discover
+- **Update issue status** as you progress (`in_progress` → `closed`)
+- **Link related issues** with dependencies when one blocks another
+- **Use issue IDs in commits** (e.g., "Fix rendering bug (nm-42)")
 
 ## Development Workflow
 
