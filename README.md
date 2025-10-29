@@ -133,6 +133,17 @@ output/
 
 ## Development
 
+### Developer Tools
+
+This project uses modern Python tooling for an efficient development workflow:
+
+- **uv**: Fast Python package manager (replaces pip/poetry)
+- **ruff**: Lightning-fast linter and formatter
+- **mypy**: Static type checking
+- **pytest**: Testing framework
+- **ast-grep**: Structural code search and refactoring (AST-based pattern matching)
+- **tmux**: Terminal multiplexer for background processes
+
 ### Code Quality
 
 ```bash
@@ -151,6 +162,25 @@ mypy render_to_webp.py
 ```bash
 pytest
 ```
+
+### Background Processes with tmux
+
+For long-running processes (dev servers, batch jobs), use tmux with descriptive session names:
+
+```bash
+# Create a named session
+tmux new -s neumann-api
+
+# List active sessions
+tmux ls
+
+# Attach to a session
+tmux attach -t neumann-api
+
+# Detach: Press Ctrl+b, then d
+```
+
+Sessions follow the naming pattern: `neumann-<purpose>` (e.g., `neumann-api`, `neumann-worker`)
 
 ## Roadmap
 
