@@ -70,6 +70,8 @@ neumann/
 - **ruff**: Fast Python linter and formatter (replaces black, isort, flake8)
 - **mypy**: Static type checking
 - **pytest**: Testing framework
+- **ast-grep**: Structural code search and refactoring (AST-based pattern matching)
+- **tmux**: Terminal multiplexer for background sessions and dev servers
 
 ### Future Dependencies
 - **ChromaDB**: Vector database for embeddings
@@ -221,6 +223,81 @@ mypy render_to_webp.py
 pytest
 ```
 
+### Background Services & tmux
+
+**IMPORTANT**: Use **tmux** for all long-running processes and dev servers. This keeps processes running even if the terminal disconnects and makes it easy to monitor background tasks.
+
+#### When to Use tmux
+- Running development servers (FastAPI, Flask, etc.)
+- Long-running batch processes (embedding generation, bulk rendering)
+- Workers or daemons that need to run continuously
+- Any process that should persist beyond the current shell session
+
+#### Naming Convention
+**Always use descriptive, project-specific session names:**
+- Format: `neumann-<purpose>` (e.g., `neumann-api`, `neumann-worker`, `neumann-embeddings`)
+- Use lowercase with hyphens
+- Be specific about what's running in the session
+
+#### Workflow
+
+**1. Creating a new tmux session:**
+```bash
+# Create and attach to a named session
+tmux new -s neumann-api
+
+# When starting a session, ALWAYS inform the user:
+# "Started tmux session 'neumann-api' for the FastAPI development server"
+```
+
+**2. Detaching from a session (keep it running):**
+```bash
+# Press: Ctrl+b, then d
+# Or use: tmux detach
+```
+
+**3. Listing active sessions:**
+```bash
+tmux ls
+# Example output:
+# neumann-api: 1 windows (created Wed Oct 29 14:30:00 2025)
+# neumann-worker: 1 windows (created Wed Oct 29 14:45:00 2025)
+```
+
+**4. Attaching to an existing session:**
+```bash
+tmux attach -t neumann-api
+# Or shorthand: tmux a -t neumann-api
+```
+
+**5. Killing a session:**
+```bash
+tmux kill-session -t neumann-api
+```
+
+#### Best Practices
+- **Always inform the user** when you create a tmux session, including:
+  - The session name
+  - What's running in it
+  - How to attach to it
+- **Check for existing sessions** with `tmux ls` before creating new ones
+- **Use descriptive names** so the user knows what each session is for
+- **One purpose per session** (don't mix API server + worker in same session)
+- **Clean up** unused sessions with `tmux kill-session` when done
+
+#### Example Usage
+
+```bash
+# Starting a FastAPI dev server in tmux
+tmux new -s neumann-api
+uvicorn main:app --reload --port 8000
+
+# Inform user:
+# "Started tmux session 'neumann-api' running FastAPI on port 8000"
+# "Attach with: tmux attach -t neumann-api"
+# "Detach with: Ctrl+b, then d"
+```
+
 ### Git Workflow
 - Commits use ProductThor account (ProductThor@users.noreply.github.com)
 - Always update CLAUDE.md when making significant architectural changes
@@ -300,6 +377,8 @@ When working on this project:
 4. **Use uv for dependencies** (not pip or poetry)
 5. **Follow ruff formatting** (120 char line length)
 6. **Add type hints** for all new functions
+7. **Use ast-grep** for structural code search and refactoring
+8. **Use tmux** for dev servers and long-running processes (with descriptive session names)
 
 For package documentation, use Context7 MCP to fetch latest docs:
 - WeasyPrint: `/FedericoCeratto/weasyprint`
