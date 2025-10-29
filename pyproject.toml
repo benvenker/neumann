@@ -1,0 +1,70 @@
+[project]
+name = "neumann"
+version = "0.1.0"
+description = "Render Markdown & code files to PDF, then to searchable WebP tiles with hybrid search capabilities"
+authors = [
+    { name = "ProductThor", email = "ProductThor@users.noreply.github.com" }
+]
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+
+dependencies = [
+    "weasyprint>=62.3,<63",
+    "pygments>=2.18.0,<3",
+    "markdown>=3.6,<4",
+    "pymupdf>=1.24.8,<2",
+    "pillow>=10.4.0,<11",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+neumann = "render_to_webp:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
