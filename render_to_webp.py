@@ -37,6 +37,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import TextLexer, guess_lexer_for_filename
 # HTML ➜ PDF
 from weasyprint import HTML
+from config import config as app_config
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {
@@ -397,6 +398,37 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
     # Save a quick list of pages if keeping pages
     if cfg.emit in ("pages", "both"):
         (pages_dir / "pages.txt").write_text("\n".join([p.name for p in webps]), encoding="utf-8")
+
+    # Always emit pages.jsonl manifest in pages directory
+    # Fields: doc_id, page, uri, sha256, bytes, width, height, source_pdf, source_file
+    pages_records: List[Dict[str, Any]] = []
+    for wp in webps:
+        m = re.search(r"-p(\d+)$", wp.stem)
+        page_num = int(m.group(1)) if m else 1
+        # Compute metadata
+        with Image.open(wp) as im:
+            width, height = im.size
+        file_bytes = wp.stat().st_size
+        sha = sha256_file(wp)
+        # Build HTTP URI using ASSET_BASE_URL
+        # Output structure: <out_root>/<doc_id>/pages/<filename>
+        uri = f"{app_config.ASSET_BASE_URL}/out/{doc_id}/pages/{wp.name}"
+        pages_records.append(
+            {
+                "doc_id": doc_id,
+                "page": page_num,
+                "uri": uri,
+                "sha256": sha,
+                "bytes": file_bytes,
+                "width": width,
+                "height": height,
+                "source_pdf": str(pdf_path),
+                "source_file": str(src_path),
+            }
+        )
+    with open(pages_dir / "pages.jsonl", "w", encoding="utf-8") as f:
+        for rec in pages_records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     # 4) Tiles + manifest
     if cfg.emit in ("tiles", "both"):

@@ -11,10 +11,9 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 
 **Phase 1: Document → Image Pipeline** ✓ (Current)
 - Single-file CLI script (`render_to_webp.py`)
-- Converts Markdown and code files to PDF using WeasyPrint
-- Renders PDFs to high-quality WebP images
-- Generates overlapping tiles for efficient image search
-- Produces JSONL/JSON/TSV manifests with tile metadata and SHA-256 hashes
+- Markdown/code → HTML → PDF (WeasyPrint) → WebP pages
+- Emits `pages.jsonl` for every run (pages-first default)
+- Tiling and tile manifests are optional and off by default
 
 ## Architecture
 
@@ -29,6 +28,10 @@ neumann/
 ├── README.md                # User documentation
 └── CLAUDE.md                # This file (context for Claude)
 ```
+
+Renderer (`render_to_webp.py`): Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL`. Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
+
+Defaults: `emit=pages`, `manifest=none`, `linenos=inline`, `tile_mode=bands`, `tile_overlap=0.10`. `pages.jsonl` is always emitted. Tile output and manifests are opt-in.
 
 ### Future Structure (as project grows)
 ```
@@ -63,6 +66,7 @@ neumann/
 - **Pillow** (10.4.0): Image manipulation and WebP encoding
 - **Pygments** (2.18.0): Syntax highlighting for code files
 - **Markdown** (3.6): Markdown parsing with extensions
+- **pydantic-settings**: Configuration loading for `config.Config`
 
 ### Development Tools
 - **uv**: Modern Python package manager (fast pip/poetry replacement)
@@ -99,28 +103,42 @@ Alternatives considered:
 - **ReportLab**: Low-level API, harder to style
 - **wkhtmltopdf**: Unmaintained, Qt WebKit dependency
 
-### Why WebP?
-- Better compression than JPEG/PNG (smaller files)
-- Supports both lossy and lossless modes
-- Native support in modern browsers
-- Efficient for tile-based storage
+### Tiling modes and overlap
+- Two modes: `bands` (default, full-width horizontal bands; height set by `--band-height`) and `grid` (square tiles; size set by `--tile-size`).
+- `--tile-overlap` applies to both modes (default 10%).
+- Tile hashing is enabled by default; disable with `--no-hash-tiles`.
+- Rationale: overlapping tiles prevent content from being split across tile boundaries and improve recall.
 
-### Why overlapping tiles?
-- Prevents content from being split across tile boundaries
-- Improves search recall (same content appears in multiple tiles)
-- Default 10% overlap balances storage vs. recall
+### Manifests and locations
+- Pages manifest: `pages/pages.jsonl` (always written). Each record includes page metadata and `uri` built as `{ASSET_BASE_URL}/out/{doc_id}/pages/{file}.webp`.
+- Tile manifests: written only when tiling is enabled and `--manifest` ≠ `none`. Formats supported: JSONL, JSON, TSV.
+
+### Configuration
+Configuration is provided by `config.Config` (pydantic-settings), which reads environment variables and `.env`. Key settings include `ASSET_BASE_URL`, `CHROMA_PATH`, and chunking defaults (e.g., `tile_overlap`). The renderer uses `ASSET_BASE_URL` to build HTTP `uri` fields in `pages/pages.jsonl`.
+
+### Summarization artifacts
+`summarize.py` and `models.py` produce `.summary.md` files consisting of YAML front matter plus a 200–400 word body (enforced by tests). The default generator is a stub used for tests; model providers can be integrated later. An example artifact lives in `output_summaries/`.
+
+### Indexing and search (separate step)
+`indexer.py` initializes Chroma and two collections: `search_summaries` and `search_code`, and exposes upsert helpers. It is not wired into the renderer CLI; indexing is a separate step/module at present.
 
 ### Why JSONL for manifests?
+For tile manifests (when enabled):
 - Streaming-friendly (process one record at a time)
 - Easy to append new tiles
 - Simple to import into databases
 - Still human-readable (unlike binary formats)
+
+### Tests codify defaults
+Tests enforce pages-first defaults, `pages.jsonl` emission with HTTP `uri`s, syntax highlighting behavior, summary constraints, and Chroma collection setup.
 
 ## Project Management
 
 ### Issue Tracking with Beads
 
 **IMPORTANT**: This project uses **Beads (bd)** for issue tracking and project management, NOT GitHub Issues or other systems.
+
+The following workflows are operational guidance and do not affect runtime behavior.
 
 #### Why Beads?
 - Local-first issue tracking (lives in `.beads/` directory)
@@ -353,6 +371,24 @@ python render_to_webp.py \
   --input-dir ./docs \
   --out-dir ./out \
   --extra-css-path custom.css
+```
+
+### CLI usage
+You can invoke via `python render_to_webp.py …` or the script entry `neumann` defined in `pyproject.toml`. Prefer `neumann` for consistency with packaging.
+
+### Examples: enabling tiles and manifests
+```bash
+# Generate pages only (default)
+neumann --input-dir ./docs --out-dir ./out
+
+# Generate tiles (bands) and tile manifest (JSONL)
+neumann --input-dir ./docs --out-dir ./out \
+  --emit both --tile-mode bands --band-height 512 \
+  --manifest jsonl
+
+# Generate tiles (grid) with 20% overlap
+neumann --input-dir ./docs --out-dir ./out \
+  --emit both --tile-mode grid --tile-size 512 --tile-overlap 0.20
 ```
 
 ### Debug rendering issues
