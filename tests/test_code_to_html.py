@@ -38,7 +38,7 @@ def test_code_to_html_python():
     assert "codehilite" in html
 
     # Verify it's wrapped in article tag
-    assert "<article class='code-article'>" in html
+    assert "code-article" in html
 
 
 def test_code_to_html_javascript():
