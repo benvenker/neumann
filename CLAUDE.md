@@ -24,7 +24,7 @@ neumann/
 ├── .beads/                  # Beads issue tracking (git-tracked)
 ├── render_to_webp.py       # Main CLI script
 ├── pyproject.toml           # Modern Python project config (PEP 621)
-├── .python-version          # Python 3.13.2
+├── .python-version          # Python 3.10
 ├── .envrc                   # direnv auto-activation
 ├── README.md                # User documentation
 └── CLAUDE.md                # This file (context for Claude)
@@ -362,7 +362,7 @@ python render_to_webp.py \
 
 ## Notes
 
-- Python 3.13.2 is required (`.python-version` file)
+- Python 3.10+ is required (`.python-version` file specifies 3.10)
 - Virtual environment is in `.venv/` (auto-activated with direnv)
 - Output can be large (~1MB per page with tiles)
 - WeasyPrint requires system libraries (Cairo, Pango)
