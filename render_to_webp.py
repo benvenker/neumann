@@ -187,12 +187,11 @@ def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: Optional[str]
     /* Pygments line-number tweaks */
     .codehilite table {{ border-spacing: 0; width: 100%; }}
     .codehilite td.linenos {{
-      width: 2.6em;
-      color: #9a9a9a;
-      padding: 0 6px 0 4px;
-      border-right: 1px solid #eee;
+      width: 2.0em;
+      color: #a7a7a7;
+      padding: 0 4px 0 2px;
     }}
-    .codehilite td.code {{ padding-left: 8px; }}
+    .codehilite td.code {{ padding-left: 6px; }}
 
     table {{ border-collapse: collapse; width: 100%; }}
     th, td {{ border: 1px solid #eee; padding: 4px 6px; vertical-align: top; }}
