@@ -7,9 +7,10 @@ This plan details the implementation of a single-file Python CLI (`render_to_web
 ## Key Features
 
 ### Default Behavior
-- **Emits both pages AND tiles** by default (`--emit {pages,tiles,both}`)
-- **Tile hashing enabled** by default (SHA-256), with `--no-hash-tiles` to disable
-- **Manifest control**: `--manifest {jsonl,json,tsv,none}` (applies to tiles)
+- **Emits pages only** by default (`--emit {pages,tiles,both}`; default: `pages`)
+- **No manifest generated** by default (`--manifest {jsonl,json,tsv,none}`; default: `none`)
+- **Tile hashing enabled** when tiles are generated (SHA-256), with `--no-hash-tiles` to disable
+- **Pages-first philosophy**: Start simple with pages, add tiles only when needed for search/embedding
 
 ### Supported Input Formats
 
@@ -59,7 +60,14 @@ Manifest Generation (JSONL/JSON/TSV)
 
 ## CLI Interface
 
-### Basic Usage
+### Basic Usage (Pages Only - Default)
+```bash
+python render_to_webp.py \
+  --input-dir ./my_docs \
+  --out-dir ./out
+```
+
+### With Tiles (Explicit Opt-In)
 ```bash
 python render_to_webp.py \
   --input-dir ./my_docs \
@@ -96,9 +104,9 @@ python render_to_webp.py \
 - `--tile-overlap` - Fractional overlap 0.0-0.5 (default: 0.10)
 
 **Output Control:**
-- `--emit` - Output mode: `pages`, `tiles`, or `both` (default: both)
-- `--manifest` - Manifest format: `jsonl`, `json`, `tsv`, or `none` (default: jsonl)
-- `--no-hash-tiles` - Disable SHA-256 hashing (enabled by default)
+- `--emit` - Output mode: `pages`, `tiles`, or `both` (default: pages)
+- `--manifest` - Manifest format: `jsonl`, `json`, `tsv`, or `none` (default: none)
+- `--no-hash-tiles` - Disable SHA-256 hashing (enabled by default when tiles are generated)
 
 ## Data Structures
 
@@ -176,11 +184,12 @@ out/
 - Can be refactored into package structure later
 - Follows "start simple, grow complex" principle
 
-### Why Emit Both Pages and Tiles by Default?
-- Pages useful for preview and debugging
-- Tiles required for search/embedding pipeline
-- Storage is cheap; flexibility is valuable
-- User can optimize later with `--emit tiles`
+### Why Pages-Only by Default?
+- **Simplicity first**: Most users want page images for preview/browsing, not search
+- **Storage efficiency**: Tiles generate many files (can be 10-50x more files per document)
+- **Progressive enhancement**: Users can opt into tiles when they need search/embedding
+- **Faster default**: Pages-only rendering is faster (no tiling overhead)
+- **Clear intent**: Making tiles explicit ensures users understand the additional storage/compute cost
 
 ### Why Hash by Default?
 - Enables deduplication across documents

@@ -1,15 +1,17 @@
 # Neumann
 
-A Python CLI tool that renders Markdown and code files to PDF, then converts them to searchable WebP tiles for hybrid search applications.
+A Python CLI tool that renders Markdown and code files to PDF, then converts them to WebP page images. Pages-first by default, with optional tile generation for hybrid search applications.
 
 ## Features
 
 - **Multi-format support**: Markdown (.md, .markdown, .mdx) and code files (.py, .js, .ts, .go, .rs, .java, .c, .cpp, .sh, .json, .yml, .html, .css, etc.)
 - **Syntax highlighting**: Powered by Pygments with customizable color schemes
 - **High-quality rendering**: WeasyPrint for PDF generation, configurable DPI and WebP quality
-- **Tile generation**: Split pages into overlapping tiles for efficient image search
+- **Pages-first philosophy**: Generates full-page WebP images by default (tiles are optional)
+- **Optional tile generation**: Split pages into overlapping tiles for efficient image search
 - **Content hashing**: SHA-256 checksums for each tile (optional)
-- **Flexible manifests**: JSONL, JSON, or TSV formats for tile metadata
+- **Flexible manifests**: JSONL, JSON, or TSV formats for tile metadata (optional)
+- **Compact line numbers**: Inline line numbers for code files by default (table-style also available)
 
 ## System Dependencies
 
@@ -53,10 +55,26 @@ direnv allow
 
 ### Basic Example
 
+By default, renders pages only (no tiles, no manifest):
+
 ```bash
 python render_to_webp.py \
   --input-dir ./docs \
   --out-dir ./output
+```
+
+This creates WebP page images suitable for preview and basic search. Tiles are optional and only generated when explicitly requested.
+
+### Optional: Generate Tiles for Search
+
+To generate overlapping tiles for image embedding and hybrid search:
+
+```bash
+python render_to_webp.py \
+  --input-dir ./docs \
+  --out-dir ./output \
+  --emit both \
+  --manifest jsonl
 ```
 
 ### Full Example with Options
@@ -92,11 +110,25 @@ python render_to_webp.py \
 - `--webp-lossless`: Use lossless WebP encoding (larger files)
 - `--tile-size`: Tile edge length in pixels (default: 1024)
 - `--tile-overlap`: Fractional overlap between tiles 0.0-0.5 (default: 0.10)
-- `--emit`: Output type: `pages`, `tiles`, or `both` (default: both)
-- `--manifest`: Manifest format: `jsonl`, `json`, `tsv`, or `none` (default: jsonl)
+- `--emit`: Output type: `pages`, `tiles`, or `both` (default: pages)
+- `--manifest`: Manifest format: `jsonl`, `json`, `tsv`, or `none` (default: none)
 - `--no-hash-tiles`: Disable SHA-256 hashing for tiles
 
 ## Output Structure
+
+### Default (Pages Only)
+
+```
+output/
+├── document__example.md/
+│   ├── example.pdf
+│   └── pages/
+│       ├── example-p001.webp
+│       ├── example-p002.webp
+│       └── pages.txt
+```
+
+### With Tiles (--emit both or --emit tiles)
 
 ```
 output/
@@ -110,7 +142,7 @@ output/
 │       ├── example-p001-x0-y0.webp
 │       ├── example-p001-x0-y922.webp
 │       ├── ...
-│       └── tiles.jsonl
+│       └── tiles.jsonl  (only if --manifest is specified)
 ```
 
 ### Manifest Format (JSONL example)
