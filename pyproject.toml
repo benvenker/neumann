@@ -65,6 +65,7 @@ check_untyped_defs = true
 strict_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+ignore_missing_imports = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]

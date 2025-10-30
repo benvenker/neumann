@@ -4,13 +4,13 @@ Tests verify that code files are correctly converted to HTML with syntax highlig
 using Pygments, with proper language detection and fallback handling.
 """
 
-import sys
 import pathlib
+import sys
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-from render_to_webp import code_to_html, RenderConfig
+from render_to_webp import RenderConfig, code_to_html
 
 
 def test_code_to_html_python():
@@ -43,11 +43,11 @@ def test_code_to_html_python():
 
 def test_code_to_html_javascript():
     """Test JavaScript code highlighting."""
-    code = '''function greet(name) {
+    code = """function greet(name) {
     console.log(`Hello, ${name}!`);
     return name;
 }
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "test.js", cfg, "JavaScript Test")
 
@@ -59,7 +59,7 @@ def test_code_to_html_javascript():
 
 def test_code_to_html_typescript():
     """Test TypeScript code highlighting."""
-    code = '''interface User {
+    code = """interface User {
     name: string;
     age: number;
 }
@@ -67,7 +67,7 @@ def test_code_to_html_typescript():
 function greet(user: User): void {
     console.log(`Hello, ${user.name}!`);
 }
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "test.ts", cfg, "TypeScript Test")
 
@@ -79,11 +79,11 @@ function greet(user: User): void {
 
 def test_code_to_html_shell():
     """Test shell script highlighting."""
-    code = '''#!/bin/bash
+    code = """#!/bin/bash
 echo "Hello, World!"
 cd /tmp
 ls -la
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "test.sh", cfg, "Shell Test")
 
@@ -95,12 +95,12 @@ ls -la
 
 def test_code_to_html_json():
     """Test JSON highlighting."""
-    code = '''{
+    code = """{
     "name": "test",
     "version": "1.0.0",
     "dependencies": {}
 }
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "package.json", cfg, "JSON Test")
 
@@ -112,10 +112,10 @@ def test_code_to_html_json():
 
 def test_code_to_html_unknown_fallback():
     """Test fallback to TextLexer for unknown file types."""
-    code = '''This is some text
+    code = """This is some text
 in an unknown file format
 with no syntax highlighting
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "unknown.xyz", cfg, "Unknown Test")
 
@@ -133,7 +133,7 @@ with no syntax highlighting
 
 def test_code_to_html_with_custom_pygments_style():
     """Test that custom Pygments style is applied."""
-    code = '''print("Hello")'''
+    code = """print("Hello")"""
 
     # Test with monokai style
     cfg_monokai = RenderConfig(pygments_style="monokai")
@@ -151,12 +151,12 @@ def test_code_to_html_with_custom_pygments_style():
 
 def test_code_to_html_line_numbers():
     """Test that line numbers are included in output."""
-    code = '''line 1
+    code = """line 1
 line 2
 line 3
 line 4
 line 5
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "test.txt", cfg, "Line Number Test")
 
@@ -180,14 +180,14 @@ def test_code_to_html_empty_code():
 
 def test_code_to_html_go():
     """Test Go code highlighting."""
-    code = '''package main
+    code = """package main
 
 import "fmt"
 
 func main() {
     fmt.Println("Hello, World!")
 }
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "main.go", cfg, "Go Test")
 
@@ -199,10 +199,10 @@ func main() {
 
 def test_code_to_html_rust():
     """Test Rust code highlighting."""
-    code = '''fn main() {
+    code = """fn main() {
     println!("Hello, World!");
 }
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "main.rs", cfg, "Rust Test")
 
@@ -214,12 +214,12 @@ def test_code_to_html_rust():
 
 def test_code_to_html_yaml():
     """Test YAML code highlighting."""
-    code = '''name: test
+    code = """name: test
 version: 1.0.0
 dependencies:
   - package1
   - package2
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "config.yml", cfg, "YAML Test")
 
@@ -231,12 +231,12 @@ dependencies:
 
 def test_code_to_html_special_characters():
     """Test handling of special HTML characters."""
-    code = '''<html>
+    code = """<html>
 <body>
     <script>alert("XSS test & <tags>");</script>
 </body>
 </html>
-'''
+"""
     cfg = RenderConfig()
     html = code_to_html(code, "test.html", cfg, "HTML Test")
 

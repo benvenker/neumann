@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Sample Python file for testing code-to-HTML rendering."""
 
-import sys
-from typing import List, Optional
 
 
 def greet(name: str, enthusiastic: bool = False) -> str:
