@@ -260,21 +260,48 @@ def pdf_to_webp_pages(pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, q
 
 
 def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: int, lossless: bool) -> List[Tuple[pathlib.Path, Tuple[int,int,int,int]]]:
-    """Square grid tiling."""
+    """Square grid tiling with guaranteed edge coverage."""
     with Image.open(webp_path) as im:
         im = im.convert("RGB")
         W, H = im.size
         step = max(1, int(tile_size * (1.0 - overlap)))
+        
+        # Generate x coordinates ensuring right edge is covered
+        x_coords = []
+        x = 0
+        while x < W:
+            if x + tile_size >= W:
+                # Ensure last tile covers right edge
+                x_coords.append(max(0, W - tile_size))
+                break
+            x_coords.append(x)
+            x += step
+        
+        # Generate y coordinates ensuring bottom edge is covered
+        y_coords = []
+        y = 0
+        while y < H:
+            if y + tile_size >= H:
+                # Ensure last tile covers bottom edge
+                y_coords.append(max(0, H - tile_size))
+                break
+            y_coords.append(y)
+            y += step
+        
         tiles = []
-        for y in range(0, max(H - tile_size, 0) + 1, step):
-            for x in range(0, max(W - tile_size, 0) + 1, step):
-                crop = im.crop((x, y, x + tile_size, y + tile_size))
+        for y in y_coords:
+            for x in x_coords:
+                # Clamp crop coordinates to image bounds
+                x0, y0 = x, y
+                x1 = min(x + tile_size, W)
+                y1 = min(y + tile_size, H)
+                crop = im.crop((x0, y0, x1, y1))
                 out = webp_path.with_name(f"{webp_path.stem}-x{x}-y{y}.webp")
                 if lossless:
                     crop.save(out, "WEBP", lossless=True, method=6)
                 else:
                     crop.save(out, "WEBP", quality=quality, method=6)
-                tiles.append((out, (x, y, x + tile_size, y + tile_size)))
+                tiles.append((out, (x0, y0, x1, y1)))
     return tiles
 
 
