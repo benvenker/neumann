@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urlparse
 
-from pydantic import AnyHttpUrl, Field, ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +14,7 @@ class Config(BaseSettings):
     """
 
     # Asset serving
-    ASSET_BASE_URL: AnyHttpUrl = Field(  # e.g., http://127.0.0.1:8000
+    ASSET_BASE_URL: str = Field(  # e.g., http://127.0.0.1:8000
         default="http://127.0.0.1:8000",
         description="Base URL used to build public URIs for rendered page images.",
     )
@@ -35,6 +36,17 @@ class Config(BaseSettings):
     OVERLAP: int = Field(default=30, ge=0, le=1000)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("ASSET_BASE_URL")
+    @classmethod
+    def normalize_asset_base_url(cls, value: str) -> str:
+        value = value.strip()
+        if value.endswith("/"):
+            value = value[:-1]
+        parsed = urlparse(value)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError("ASSET_BASE_URL must be a valid http(s) URL")
+        return value
 
     @field_validator("OVERLAP")
     @classmethod

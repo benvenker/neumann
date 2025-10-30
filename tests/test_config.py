@@ -5,18 +5,17 @@ import pytest
 
 
 def reload_config_module():
-    if "config" in list(globals()):
-        import sys
-
-        sys.modules.pop("config", None)
+    import sys
+    sys.modules.pop("config", None)
     return importlib.import_module("config")
 
 
-def test_config_defaults(_tmp_path, monkeypatch):
+def test_config_defaults(tmp_path, monkeypatch):
     # Ensure no env leaks
     monkeypatch.delenv("ASSET_BASE_URL", raising=False)
     monkeypatch.delenv("CHROMA_PATH", raising=False)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    # Ensure key is treated as absent even if inherited from host env
+    monkeypatch.setenv("OPENAI_API_KEY", "")
     monkeypatch.delenv("LINES_PER_CHUNK", raising=False)
     monkeypatch.delenv("OVERLAP", raising=False)
 
@@ -51,11 +50,9 @@ def test_config_from_env(monkeypatch):
 def test_overlap_validation(monkeypatch):
     monkeypatch.setenv("LINES_PER_CHUNK", "50")
     monkeypatch.setenv("OVERLAP", "50")  # equal is invalid
-
-    cfg_mod = reload_config_module()
-
+    import pytest
     with pytest.raises(Exception):  # noqa: B017
-        cfg_mod.Config()
+        reload_config_module()
 
 
 def test_require_openai(monkeypatch):
