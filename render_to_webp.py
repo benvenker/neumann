@@ -394,7 +394,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
                     "page": page_num,
                     "tile_idx": tile_counter,
                     "tile_path": str(final_tile),
-                    "page_path": str(wp),
+                    "page_path": str(wp) if cfg.emit in ("pages", "both") else None,
                     "bbox": {"x0": bbox[0], "y0": bbox[1], "x1": bbox[2], "y1": bbox[3]},
                     "tile_mode": cfg.tile_mode,
                     "tile_px": cfg.tile_size if cfg.tile_mode == "grid" else None,
