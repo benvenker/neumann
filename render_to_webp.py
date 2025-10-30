@@ -243,60 +243,61 @@ def html_to_pdf(html_str: str, pdf_path: pathlib.Path):
 def pdf_to_webp_pages(pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, quality: int, lossless: bool) -> List[pathlib.Path]:
     """Rasterize each PDF page to WebP; return list of paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    doc = fitz.open(str(pdf_path))
-    scale = dpi / 72.0
     webps = []
-    for i, page in enumerate(doc):
-        mat = fitz.Matrix(scale, scale)
-        pix = page.get_pixmap(matrix=mat, alpha=False)
-        out_path = out_dir / f"{pdf_path.stem}-p{i+1:03}.webp"
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        if lossless:
-            img.save(out_path, "WEBP", lossless=True, method=6)
-        else:
-            img.save(out_path, "WEBP", quality=quality, method=6)
-        webps.append(out_path)
-    doc.close()
+    with fitz.open(str(pdf_path)) as doc:
+        scale = dpi / 72.0
+        for i, page in enumerate(doc):
+            mat = fitz.Matrix(scale, scale)
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            out_path = out_dir / f"{pdf_path.stem}-p{i+1:03}.webp"
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            if lossless:
+                img.save(out_path, "WEBP", lossless=True, method=6)
+            else:
+                img.save(out_path, "WEBP", quality=quality, method=6)
+            webps.append(out_path)
     return webps
 
 
 def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: int, lossless: bool) -> List[Tuple[pathlib.Path, Tuple[int,int,int,int]]]:
     """Square grid tiling."""
-    im = Image.open(webp_path).convert("RGB")
-    W, H = im.size
-    step = max(1, int(tile_size * (1.0 - overlap)))
-    tiles = []
-    for y in range(0, max(H - tile_size, 0) + 1, step):
-        for x in range(0, max(W - tile_size, 0) + 1, step):
-            crop = im.crop((x, y, x + tile_size, y + tile_size))
-            out = webp_path.with_name(f"{webp_path.stem}-x{x}-y{y}.webp")
-            if lossless:
-                crop.save(out, "WEBP", lossless=True, method=6)
-            else:
-                crop.save(out, "WEBP", quality=quality, method=6)
-            tiles.append((out, (x, y, x + tile_size, y + tile_size)))
+    with Image.open(webp_path) as im:
+        im = im.convert("RGB")
+        W, H = im.size
+        step = max(1, int(tile_size * (1.0 - overlap)))
+        tiles = []
+        for y in range(0, max(H - tile_size, 0) + 1, step):
+            for x in range(0, max(W - tile_size, 0) + 1, step):
+                crop = im.crop((x, y, x + tile_size, y + tile_size))
+                out = webp_path.with_name(f"{webp_path.stem}-x{x}-y{y}.webp")
+                if lossless:
+                    crop.save(out, "WEBP", lossless=True, method=6)
+                else:
+                    crop.save(out, "WEBP", quality=quality, method=6)
+                tiles.append((out, (x, y, x + tile_size, y + tile_size)))
     return tiles
 
 
 def tile_bands(webp_path: pathlib.Path, band_height: int, overlap: float, quality: int, lossless: bool) -> List[Tuple[pathlib.Path, Tuple[int,int,int,int]]]:
     """Full-width horizontal slices with vertical overlap."""
-    im = Image.open(webp_path).convert("RGB")
-    W, H = im.size
-    step = max(1, int(band_height * (1.0 - overlap)))
-    tiles = []
-    y = 0
-    while True:
-        y_end = min(y + band_height, H)
-        crop = im.crop((0, y, W, y_end))
-        out = webp_path.with_name(f"{webp_path.stem}-y{y}.webp")
-        if lossless:
-            crop.save(out, "WEBP", lossless=True, method=6)
-        else:
-            crop.save(out, "WEBP", quality=quality, method=6)
-        tiles.append((out, (0, y, W, y_end)))
-        if y_end >= H:
-            break
-        y += step
+    with Image.open(webp_path) as im:
+        im = im.convert("RGB")
+        W, H = im.size
+        step = max(1, int(band_height * (1.0 - overlap)))
+        tiles = []
+        y = 0
+        while True:
+            y_end = min(y + band_height, H)
+            crop = im.crop((0, y, W, y_end))
+            out = webp_path.with_name(f"{webp_path.stem}-y{y}.webp")
+            if lossless:
+                crop.save(out, "WEBP", lossless=True, method=6)
+            else:
+                crop.save(out, "WEBP", quality=quality, method=6)
+            tiles.append((out, (0, y, W, y_end)))
+            if y_end >= H:
+                break
+            y += step
     return tiles
 
 
