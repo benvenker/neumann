@@ -4,18 +4,19 @@ Render Markdown & code files ➜ PDF ➜ WebP pages and/or tiles (with hashing &
 with tight CSS and a 'bands' tiler for full-width horizontal tiles.
 
 Defaults:
-- Emits BOTH pages and tiles
-- Computes SHA-256 for each tile (disable with --no-hash-tiles)
-- Tile manifest: JSONL (one JSON per line)
-- Tiling mode: 'bands' (full-width horizontal slices)
+- Emits pages only (no tiles)
+- No manifest generated (use --manifest jsonl/json/tsv to enable)
+- Tiling mode: 'bands' (full-width horizontal slices, when tiles are enabled)
 - Line numbers: 'inline' for code files (no wide gutter)
 
 Examples:
   python render_to_webp.py --input-dir ./docs --out-dir ./out
+  python render_to_webp.py --input-dir ./docs --out-dir ./out --emit both --manifest jsonl
   python render_to_webp.py --input-dir ./docs --out-dir ./out --tile-mode bands --band-height 1100
 """
 
 import argparse
+import hashlib
 import html
 import json
 import os
@@ -23,23 +24,19 @@ import pathlib
 import re
 import shutil
 import sys
-import hashlib
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-# HTML ➜ PDF
-from weasyprint import HTML
-
-# Markdown + syntax highlight
-import markdown as md
-from pygments import highlight
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import guess_lexer_for_filename, TextLexer
-
 # PDF ➜ WebP
 import fitz  # PyMuPDF
+# Markdown + syntax highlight
+import markdown as md
 from PIL import Image
-
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import TextLexer, guess_lexer_for_filename
+# HTML ➜ PDF
+from weasyprint import HTML
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {
@@ -70,8 +67,8 @@ class RenderConfig:
     webp_quality: int = 90
     webp_lossless: bool = False
 
-    emit: str = "both"               # pages | tiles | both
-    manifest: str = "jsonl"          # jsonl | json | tsv | none
+    emit: str = "pages"              # pages | tiles | both
+    manifest: str = "none"           # jsonl | json | tsv | none
     hash_tiles: bool = True
 
     tile_mode: str = "bands"         # bands | grid
@@ -444,8 +441,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--webp-lossless", action="store_true", help="Encode WebP losslessly (larger files).")
 
     # outputs
-    ap.add_argument("--emit", choices=["pages", "tiles", "both"], default="both", help="What to emit to disk.")
-    ap.add_argument("--manifest", choices=["jsonl", "json", "tsv", "none"], default="jsonl", help="Tile manifest format.")
+    ap.add_argument("--emit", choices=["pages", "tiles", "both"], default="pages", help="What to emit to disk.")
+    ap.add_argument("--manifest", choices=["jsonl", "json", "tsv", "none"], default="none", help="Tile manifest format.")
     ap.add_argument("--no-hash-tiles", action="store_true", help="Disable SHA-256 for each tile (enabled by default).")
 
     # tiling
