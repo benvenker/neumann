@@ -25,7 +25,7 @@ import re
 import shutil
 import sys
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 # PDF ➜ WebP
 import fitz  # PyMuPDF
@@ -40,11 +40,28 @@ from weasyprint import HTML
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {
-    ".js", ".ts", ".tsx", ".jsx",
-    ".py", ".go", ".rs", ".java", ".c", ".cpp", ".h", ".hpp", ".cs",
-    ".sh", ".bash", ".zsh",
-    ".json", ".yml", ".yaml", ".toml",
-    ".html", ".css"
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".py",
+    ".go",
+    ".rs",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".cs",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".html",
+    ".css",
 }
 DEFAULT_PYGMENTS_STYLE = "friendly"  # high-contrast light theme
 
@@ -52,31 +69,33 @@ DEFAULT_PYGMENTS_STYLE = "friendly"  # high-contrast light theme
 @dataclass
 class RenderConfig:
     page_width_px: int = 1200
-    page_margin_px: int = 12         # tighter default
+    page_margin_px: int = 12  # tighter default
     body_font_size: int = 15
     code_font_size: int = 14
     line_height: float = 1.4
     font_family_mono: str = "JetBrains Mono, Menlo, Consolas, Monaco, 'Courier New', monospace"
-    font_family_sans: str = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif"
+    font_family_sans: str = (
+        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif"
+    )
     pygments_style: str = DEFAULT_PYGMENTS_STYLE
-    extra_css_path: Optional[str] = None
-    show_header: bool = False        # hide the header bar by default
-    tight: bool = True               # compact paddings/borders
+    extra_css_path: str | None = None
+    show_header: bool = False  # hide the header bar by default
+    tight: bool = True  # compact paddings/borders
 
     dpi: int = 200
     webp_quality: int = 90
     webp_lossless: bool = False
 
-    emit: str = "pages"              # pages | tiles | both
-    manifest: str = "none"           # jsonl | json | tsv | none
+    emit: str = "pages"  # pages | tiles | both
+    manifest: str = "none"  # jsonl | json | tsv | none
     hash_tiles: bool = True
 
-    tile_mode: str = "bands"         # bands | grid
-    tile_size: int = 1024            # for grid mode (square tiles)
-    tile_overlap: float = 0.10       # for both modes
-    band_height: int = 1100          # for bands mode (full width, fixed height)
+    tile_mode: str = "bands"  # bands | grid
+    tile_size: int = 1024  # for grid mode (square tiles)
+    tile_overlap: float = 0.10  # for both modes
+    band_height: int = 1100  # for bands mode (full width, fixed height)
 
-    linenos: str = "inline"          # inline | table | none  (code files only)
+    linenos: str = "inline"  # inline | table | none  (code files only)
     input_dir: pathlib.Path = pathlib.Path(".")
 
 
@@ -87,10 +106,15 @@ def read_text(path: pathlib.Path) -> str:
 def md_to_html(markdown_text: str, cfg: RenderConfig, title: str) -> str:
     """Markdown -> HTML. For Markdown code blocks we avoid table-style linenos to keep things tight."""
     extensions = [
-        "fenced_code", "codehilite", "tables", "toc", "sane_lists", "attr_list",
+        "fenced_code",
+        "codehilite",
+        "tables",
+        "toc",
+        "sane_lists",
+        "attr_list",
     ]
     # CodeHilite's 'linenums' is bool only; using table numbers makes a wide gutter.
-    linenums_bool = True if cfg.linenos == "table" else False
+    linenums_bool = cfg.linenos == "table"
     extension_configs = {
         "codehilite": {
             "guess_lang": False,
@@ -110,7 +134,7 @@ def code_to_html(code_text: str, filename: str, cfg: RenderConfig, title: str) -
     except Exception:
         lexer = TextLexer()
     # Map lineno mode
-    ln = False
+    ln: Union[bool, Literal["inline"]] = False
     if cfg.linenos == "table":
         ln = True
     elif cfg.linenos == "inline":
@@ -118,10 +142,10 @@ def code_to_html(code_text: str, filename: str, cfg: RenderConfig, title: str) -
     formatter = HtmlFormatter(style=cfg.pygments_style, linenos=ln, nowrap=False, cssclass="codehilite")
     highlighted = highlight(code_text, lexer, formatter)
     body = f"<article class='code-article'>{highlighted}</article>"
-    return wrap_html(body, cfg, title, extra_css=formatter.get_style_defs('.codehilite'))
+    return wrap_html(body, cfg, title, extra_css=formatter.get_style_defs(".codehilite"))
 
 
-def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: Optional[str] = None) -> str:
+def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: str | None = None) -> str:
     """Wrap body with compact HTML+CSS for print/PDF."""
     pre_pad = 8 if cfg.tight else 12
     pre_bg = "#fff" if cfg.tight else "#fbfbfc"
@@ -179,7 +203,7 @@ def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: Optional[str]
       background: {pre_bg};
       border: {pre_border};
       border-radius: 6px;
-      padding: {pre_pad}px {pre_pad+2}px;
+      padding: {pre_pad}px {pre_pad + 2}px;
       overflow: auto;
       margin: 0.6em 0;
     }}
@@ -214,7 +238,7 @@ def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: Optional[str]
     }}
     """
 
-    pyg_css = HtmlFormatter(style=cfg.pygments_style).get_style_defs('.codehilite')
+    pyg_css = HtmlFormatter(style=cfg.pygments_style).get_style_defs(".codehilite")
     extra = extra_css or ""
     user_css = ""
     if cfg.extra_css_path and os.path.exists(cfg.extra_css_path):
@@ -235,11 +259,13 @@ def wrap_html(body: str, cfg: RenderConfig, title: str, extra_css: Optional[str]
     return f"<!doctype html><html>{head}<body>{container}</body></html>"
 
 
-def html_to_pdf(html_str: str, pdf_path: pathlib.Path):
+def html_to_pdf(html_str: str, pdf_path: pathlib.Path) -> None:
     HTML(string=html_str, base_url=str(pdf_path.parent)).write_pdf(str(pdf_path))
 
 
-def pdf_to_webp_pages(pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, quality: int, lossless: bool) -> List[pathlib.Path]:
+def pdf_to_webp_pages(
+    pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, quality: int, lossless: bool
+) -> list[pathlib.Path]:
     """Rasterize each PDF page to WebP; return list of paths."""
     out_dir.mkdir(parents=True, exist_ok=True)
     webps = []
@@ -248,8 +274,8 @@ def pdf_to_webp_pages(pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, q
         for i, page in enumerate(doc):
             mat = fitz.Matrix(scale, scale)
             pix = page.get_pixmap(matrix=mat, alpha=False)
-            out_path = out_dir / f"{pdf_path.stem}-p{i+1:03}.webp"
-            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            out_path = out_dir / f"{pdf_path.stem}-p{i + 1:03}.webp"
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             if lossless:
                 img.save(out_path, "WEBP", lossless=True, method=6)
             else:
@@ -258,13 +284,15 @@ def pdf_to_webp_pages(pdf_path: pathlib.Path, out_dir: pathlib.Path, dpi: int, q
     return webps
 
 
-def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: int, lossless: bool) -> List[Tuple[pathlib.Path, Tuple[int,int,int,int]]]:
+def tile_grid(
+    webp_path: pathlib.Path, tile_size: int, overlap: float, quality: int, lossless: bool
+) -> list[tuple[pathlib.Path, tuple[int, int, int, int]]]:
     """Square grid tiling with guaranteed edge coverage."""
     with Image.open(webp_path) as im:
         im = im.convert("RGB")
         W, H = im.size
         step = max(1, int(tile_size * (1.0 - overlap)))
-        
+
         # Generate x coordinates ensuring right edge is covered
         x_coords = []
         x = 0
@@ -275,7 +303,7 @@ def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: 
                 break
             x_coords.append(x)
             x += step
-        
+
         # Generate y coordinates ensuring bottom edge is covered
         y_coords = []
         y = 0
@@ -286,7 +314,7 @@ def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: 
                 break
             y_coords.append(y)
             y += step
-        
+
         tiles = []
         for y in y_coords:
             for x in x_coords:
@@ -304,7 +332,9 @@ def tile_grid(webp_path: pathlib.Path, tile_size: int, overlap: float, quality: 
     return tiles
 
 
-def tile_bands(webp_path: pathlib.Path, band_height: int, overlap: float, quality: int, lossless: bool) -> List[Tuple[pathlib.Path, Tuple[int,int,int,int]]]:
+def tile_bands(
+    webp_path: pathlib.Path, band_height: int, overlap: float, quality: int, lossless: bool
+) -> list[tuple[pathlib.Path, tuple[int, int, int, int]]]:
     """Full-width horizontal slices with vertical overlap."""
     with Image.open(webp_path) as im:
         im = im.convert("RGB")
@@ -339,7 +369,7 @@ def sanitize_title(path: pathlib.Path) -> str:
     return path.name
 
 
-def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfig):
+def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfig) -> None:
     rel = src_path.relative_to(cfg.input_dir)
     doc_id = rel.as_posix().replace("/", "__")
     dest_dir = out_root / doc_id
@@ -373,7 +403,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
         tiles_dir = dest_dir / "tiles"
         tiles_dir.mkdir(exist_ok=True, parents=True)
 
-        records = []
+        records: List[Dict[str, Any]] = []
         tile_counter = 0
         for wp in webps:
             # page number like "-p001"
@@ -427,13 +457,12 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
 
     # 5) If emit=tiles only, remove pages to keep output lean
     if cfg.emit == "tiles":
-        try:
+        import contextlib
+        with contextlib.suppress(Exception):
             shutil.rmtree(pages_dir)
-        except Exception:
-            pass
 
 
-def discover_sources(root: pathlib.Path) -> List[pathlib.Path]:
+def discover_sources(root: pathlib.Path) -> list[pathlib.Path]:
     paths = []
     for p in root.rglob("*"):
         if not p.is_file():
@@ -445,7 +474,9 @@ def discover_sources(root: pathlib.Path) -> List[pathlib.Path]:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Render Markdown & code ➜ PDF ➜ WebP (tight CSS, bands/grid tiling, hashing, manifest).")
+    ap = argparse.ArgumentParser(
+        description="Render Markdown & code ➜ PDF ➜ WebP (tight CSS, bands/grid tiling, hashing, manifest)."
+    )
     ap.add_argument("--input-dir", required=True, type=pathlib.Path, help="Directory containing .md and/or code files.")
     ap.add_argument("--out-dir", required=True, type=pathlib.Path, help="Output directory to write PDFs/WebPs.")
 
@@ -458,9 +489,15 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--pygments-style", type=str, default=DEFAULT_PYGMENTS_STYLE)
     ap.add_argument("--extra-css-path", type=str, default=None, help="Optional path to extra CSS to inject.")
     ap.add_argument("--show-header", action="store_true", help="Show a small header with the file name.")
-    ap.add_argument("--loose", action="store_true", help="Use roomier paddings/borders (opposite of --loose is the tight default).")
-    ap.add_argument("--linenos", choices=["inline","table","none"], default="inline",
-                    help="Line-number style for code files (default: inline).")
+    ap.add_argument(
+        "--loose", action="store_true", help="Use roomier paddings/borders (opposite of --loose is the tight default)."
+    )
+    ap.add_argument(
+        "--linenos",
+        choices=["inline", "table", "none"],
+        default="inline",
+        help="Line-number style for code files (default: inline).",
+    )
 
     # raster/encode
     ap.add_argument("--dpi", type=int, default=200, help="Rasterization DPI for PDF➜image (200–220 is a good start).")
@@ -469,11 +506,15 @@ def parse_args() -> argparse.Namespace:
 
     # outputs
     ap.add_argument("--emit", choices=["pages", "tiles", "both"], default="pages", help="What to emit to disk.")
-    ap.add_argument("--manifest", choices=["jsonl", "json", "tsv", "none"], default="none", help="Tile manifest format.")
+    ap.add_argument(
+        "--manifest", choices=["jsonl", "json", "tsv", "none"], default="none", help="Tile manifest format."
+    )
     ap.add_argument("--no-hash-tiles", action="store_true", help="Disable SHA-256 for each tile (enabled by default).")
 
     # tiling
-    ap.add_argument("--tile-mode", choices=["bands","grid"], default="bands", help="bands = full-width rows; grid = square tiles.")
+    ap.add_argument(
+        "--tile-mode", choices=["bands", "grid"], default="bands", help="bands = full-width rows; grid = square tiles."
+    )
     ap.add_argument("--tile-size", type=int, default=1024, help="Square tile size for grid mode.")
     ap.add_argument("--tile-overlap", type=float, default=0.10, help="Fractional overlap (0.0–0.5).")
     ap.add_argument("--band-height", type=int, default=1100, help="Row height for bands mode.")
@@ -481,7 +522,7 @@ def parse_args() -> argparse.Namespace:
     return ap.parse_args()
 
 
-def main():
+def main() -> None:
     args = parse_args()
     cfg = RenderConfig(
         page_width_px=args.page_width_px,
@@ -493,20 +534,16 @@ def main():
         extra_css_path=args.extra_css_path,
         show_header=args.show_header,
         tight=not args.loose,
-
         dpi=args.dpi,
         webp_quality=args.webp_quality,
         webp_lossless=args.webp_lossless,
-
         emit=args.emit,
         manifest=args.manifest,
         hash_tiles=not args.no_hash_tiles,
-
         tile_mode=args.tile_mode,
         tile_size=args.tile_size,
         tile_overlap=args.tile_overlap,
         band_height=args.band_height,
-
         linenos=args.linenos,
         input_dir=args.input_dir,
     )
