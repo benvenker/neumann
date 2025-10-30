@@ -418,7 +418,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
                 (tiles_dir / "tiles.json").write_text(json.dumps(records, indent=2), encoding="utf-8")
             elif cfg.manifest == "tsv":
                 lines = [
-                    f"{pathlib.Path(r['tile_path']).name}\tpage={pathlib.Path(r['page_path']).name}\t"
+                    f"{pathlib.Path(r['tile_path']).name}\tpage={pathlib.Path(r['page_path']).name if r['page_path'] else 'None'}\t"
                     f"bbox=({r['bbox']['x0']}, {r['bbox']['y0']}, {r['bbox']['x1']}, {r['bbox']['y1']})"
                     + (f"\tsha256={r['sha256']}" if "sha256" in r else "")
                     for r in records
