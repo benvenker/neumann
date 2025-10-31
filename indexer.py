@@ -10,6 +10,8 @@ from chromadb.api.models.Collection import Collection
 
 from config import config
 
+from embeddings import embed_texts
+
 
 def get_client(path: Optional[str] = None) -> ClientAPI:
     storage_path = path or config.CHROMA_PATH
@@ -156,6 +158,50 @@ def _compile_regexes(regexes: List[str]) -> List[Tuple[Pattern[str], str]]:
     return patterns
 
 
+def _parse_meta_list(value: object) -> List[str]:
+    """Normalize list-like metadata fields from comma-separated strings or lists to deduplicated lists.
+    
+    Args:
+        value: Either a list (convert items to str, strip), a string (split on commas), or other (return [])
+    
+    Returns:
+        Deduplicated list of strings, preserving order
+    """
+    if isinstance(value, list):
+        seen: set[str] = set()
+        out: List[str] = []
+        for v in value:
+            s = str(v).strip()
+            if s and s not in seen:
+                seen.add(s)
+                out.append(s)
+        return out
+    if isinstance(value, str):
+        parts = [p.strip() for p in value.split(",")]
+        seen: set[str] = set()
+        out: List[str] = []
+        for s in parts:
+            if s and s not in seen:
+                seen.add(s)
+                out.append(s)
+        return out
+    return []
+
+
+def _distance_to_score(d: Optional[float]) -> float:
+    """Convert Chroma distance to a bounded [0,1] relevance score (higher is better).
+    
+    Args:
+        d: Distance value (None or float). Lower distances indicate higher relevance.
+    
+    Returns:
+        Score in [0,1] range, where 1.0 is highest relevance. Returns 0.0 if d is None.
+    """
+    if d is None:
+        return 0.0
+    return 1.0 / (1.0 + max(d, 0.0))
+
+
 def lexical_search(
     must_terms: Optional[List[str]] = None,
     regexes: Optional[List[str]] = None,
@@ -279,12 +325,122 @@ def lexical_search(
     return results
 
 
+def semantic_search(
+    query: str,
+    k: int = 12,
+    *,
+    client: Optional[ClientAPI] = None,
+    embedding_function: Optional[Callable[[Sequence[str]], List[List[float]]]] = None,
+) -> List[Dict[str, Any]]:
+    """Query search_summaries collection using semantic similarity via embeddings.
+
+    Args:
+        query: Natural-language query string. Empty or whitespace-only returns [].
+        k: Number of results to return. k <= 0 returns [].
+        client: Optional ChromaDB client (uses default if not provided)
+        embedding_function: Optional callable to embed the query. If None, uses embed_texts.
+            Useful for testing with deterministic embeddings.
+
+    Returns:
+        List of result dicts with doc_id, source_path, score, page_uris, line_start,
+        line_end, why, and normalized metadata dict for downstream consumers.
+        
+        Note: page_uris appears both top-level (for convenience) and in metadata
+        (for completeness). This is intentional duplication for UX.
+    """
+    q = (query or "").strip()
+    if not q or k <= 0:
+        return []
+
+    summaries, _ = get_collections(client)
+
+    # Embed query using provided function or default embed_texts
+    try:
+        if embedding_function is None:
+            vecs = embed_texts([q])
+        else:
+            vecs = embedding_function([q])
+    except Exception as e:
+        error_msg = str(e)
+        if "OPENAI_API_KEY" in error_msg or "api key" in error_msg.lower():
+            raise ValueError(
+                "Failed to embed query: OPENAI_API_KEY not configured or invalid. "
+                "Set OPENAI_API_KEY in environment or .env file."
+            ) from e
+        raise ValueError(f"Failed to embed query: {error_msg}") from e
+
+    if not vecs:
+        return []
+
+    try:
+        res = summaries.query(
+            query_embeddings=[vecs[0]],
+            n_results=k,
+            include=["metadatas", "documents", "distances"],
+        )
+    except Exception as e:
+        raise ValueError(
+            f"Failed to query ChromaDB collection 'search_summaries': {str(e)}. "
+            "Ensure summaries are indexed and the collection exists."
+        ) from e
+
+    ids0 = (res.get("ids") or [[]])[0]
+    metas0 = (res.get("metadatas") or [[]])[0]
+    dists0 = (res.get("distances") or [[]])[0]
+
+    out: List[Dict[str, Any]] = []
+    for i in range(len(ids0)):
+        meta = metas0[i] or {}
+        doc_id = meta.get("doc_id") or ids0[i]
+        source_path = meta.get("source_path")
+        page_uris = _parse_meta_list(meta.get("page_uris"))
+
+        dist = dists0[i] if i < len(dists0) else None
+        score = _distance_to_score(dist)
+        why = [f"semantic match to query: '{q}'"]
+        if dist is not None:
+            why.append(f"distance={dist:.3f}")
+
+        # Normalize selected known list-like fields in metadata for consumers
+        keys_to_normalize = [
+            "product_tags",
+            "key_topics",
+            "api_symbols",
+            "related_files",
+            "suggested_queries",
+            "page_uris",
+        ]
+        metadata_norm = {
+            "language": meta.get("language"),
+            "last_updated": meta.get("last_updated"),
+        }
+        for key in keys_to_normalize:
+            metadata_norm[key] = _parse_meta_list(meta.get(key))
+
+        # Note: page_uris appears both top-level (for convenience) and in metadata (for completeness)
+        out.append(
+            {
+                "doc_id": doc_id,
+                "source_path": source_path,
+                "score": score,
+                "page_uris": page_uris,
+                "line_start": None,
+                "line_end": None,
+                "why": why,
+                "metadata": metadata_norm,
+            }
+        )
+
+    return out
+
+
 __all__ = [
     "get_client",
     "get_collections",
     "upsert_summaries",
     "upsert_code_chunks",
     "lexical_search",
+    "semantic_search",
 ]
 
 
