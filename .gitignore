@@ -54,6 +54,8 @@ uv.lock
 # Generated outputs
 output/
 output-*/
+output_*/
+test_output_*/
 out/
 
 # ChromaDB database
