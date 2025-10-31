@@ -9,24 +9,40 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 
 ## Current Status
 
-**Phase 1: Document → Image Pipeline** ✓ (Current)
+**Phase 1: Document → Image Pipeline** ✓ (Complete)
 - Single-file CLI script (`render_to_webp.py`)
 - Markdown/code → HTML → PDF (WeasyPrint) → WebP pages
 - Emits `pages.jsonl` for every run (pages-first default)
 - Tiling and tile manifests are optional and off by default
 
+**Phase 2: Core Search Infrastructure** ✓ (In Progress)
+- `embeddings.py`: OpenAI text embeddings (text-embedding-3-small, 1536-dim)
+- `indexer.py`: ChromaDB integration with persistent storage
+- `models.py`: Pydantic schemas for summaries
+- `chunker.py`: Line-based text chunking with overlap
+- `config.py`: Centralized configuration management
+- `summarize.py`: LLM summarization module
+
 ## Architecture
 
-### Current Structure (Single Script)
+### Current Structure
 ```
 neumann/
 ├── .beads/                  # Beads issue tracking (git-tracked)
-├── render_to_webp.py       # Main CLI script
+├── render_to_webp.py       # Main CLI script (render pipeline)
+├── embeddings.py            # OpenAI text embeddings
+├── indexer.py               # ChromaDB integration
+├── config.py                # Configuration management
+├── models.py                # Pydantic schemas
+├── chunker.py               # Text chunking
+├── summarize.py             # LLM summarization
 ├── pyproject.toml           # Modern Python project config (PEP 621)
 ├── .python-version          # Python 3.10
 ├── .envrc                   # direnv auto-activation
+├── env.example              # Configuration template
 ├── README.md                # User documentation
-└── CLAUDE.md                # This file (context for Claude)
+├── CLAUDE.md                # This file (context for Claude)
+└── chroma_data/             # Local ChromaDB storage (SQLite)
 ```
 
 Renderer (`render_to_webp.py`): Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL`. Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
@@ -66,7 +82,12 @@ neumann/
 - **Pillow** (10.4.0): Image manipulation and WebP encoding
 - **Pygments** (2.18.0): Syntax highlighting for code files
 - **Markdown** (3.6): Markdown parsing with extensions
-- **pydantic-settings**: Configuration loading for `config.Config`
+- **ChromaDB** (1.3.0): Vector database for embeddings (local PersistentClient)
+- **OpenAI** (2.6.1): Text embeddings via text-embedding-3-small model
+- **Pydantic** (2.12.3): Data validation and models
+- **pydantic-settings** (2.11.0): Configuration loading for `config.Config`
+- **PyYAML** (6.0.3): YAML serialization for summaries
+- **python-dotenv** (1.2.1): Environment variable loading
 
 ### Development Tools
 - **uv**: Modern Python package manager (fast pip/poetry replacement)
@@ -78,11 +99,9 @@ neumann/
 - **tmux**: Terminal multiplexer for background sessions and dev servers
 
 ### Future Dependencies
-- **ChromaDB**: Vector database for embeddings
-- **sentence-transformers**: Text embeddings (e.g., all-MiniLM-L6-v2)
+- **sentence-transformers**: Alternative text embeddings (e.g., all-MiniLM-L6-v2)
 - **CLIP** or **SigLIP**: Image embeddings
 - **FastAPI**: Web API for search service
-- **Pydantic**: Data validation for API models
 
 ## Design Decisions
 
@@ -119,8 +138,16 @@ Configuration is provided by `config.Config` (pydantic-settings), which reads en
 ### Summarization artifacts
 `summarize.py` and `models.py` produce `.summary.md` files consisting of YAML front matter plus a 200–400 word body (enforced by tests). The default generator is a stub used for tests; model providers can be integrated later. An example artifact lives in `output_summaries/`.
 
-### Indexing and search (separate step)
-`indexer.py` initializes Chroma and two collections: `search_summaries` and `search_code`, and exposes upsert helpers. It is not wired into the renderer CLI; indexing is a separate step/module at present.
+### Embeddings and indexing
+- **`embeddings.py`**: OpenAI text embeddings via `embed_texts()` using text-embedding-3-small (1536 dimensions). Supports batch processing up to 2048 texts with automatic splitting. Features:
+  - Exponential backoff with jitter for rate limits and timeouts (configurable via `max_retries` and `base_delay` parameters)
+  - Model-aware dimension validation (enforced for known models via `EXPECTED_DIMS` map; other models skip validation)
+  - Response count validation to catch mismatches early
+  - Uses public OpenAI API imports (not private `_exceptions`)
+  - Returns empty list for empty input (no error raised)
+- **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()` and `upsert_code_chunks()` helpers.
+- **`chunker.py`**: Line-based text chunking with configurable size (default 180 lines) and overlap (default 30 lines). Ensures chunks stay under 16KB for Chroma Cloud compatibility.
+- Separate modules not yet wired into renderer CLI; indexing is a separate step at present.
 
 ### Why JSONL for manifests?
 For tile manifests (when enabled):
@@ -323,10 +350,11 @@ uvicorn main:app --reload --port 8000
 
 ## Future Roadmap
 
-### Phase 2: Embedding Generation
-- Add text embeddings using sentence-transformers
+### Phase 2: Embedding Generation ✓ (In Progress)
+- ✓ Add text embeddings using OpenAI
 - Add image embeddings using CLIP/SigLIP
-- Store embeddings in ChromaDB with tile metadata
+- ✓ Store embeddings in ChromaDB
+- ⏳ Hybrid search implementation
 
 ### Phase 3: Search API
 - FastAPI web service
