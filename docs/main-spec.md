@@ -64,8 +64,12 @@ Build a local-first datastore that lets an agent:
 
   1. **Semantic** over `search_summaries` (top‑k).
   2. **Lexical** over `search_code` with `where_document`: `$contains` for keywords + `$regex` for identifiers/IDs; optional `where` on `source_path`.
-  3. **Fuse** scores, group by `(doc_id)`, map to **page_uris**, and return a compact list of hits with “why” signals.
+  3. **Fuse** scores, group by `(doc_id)`, map to **page_uris**, and return a compact list of hits with "why" signals.
 * Output (per hit): `{doc_id, source_path, score, page_uris, line_start?, line_end?, why[]}`.
+
+**Lexical search implementation details:**
+
+The lexical channel uses Chroma's `where_document` filter with `$contains` (AND logic for multiple terms) and `$regex` (OR logic for multiple patterns). Path filtering (`path_like`) is done client-side after retrieval because ChromaDB metadata filters don't support substring matching. Fetch strategy scales with path filtering: `fetch_limit = k * 3` when `path_like` is provided to account for selective filtering. Results include "why" signals explaining which terms, regexes, or path filters matched.
 
 ### 1.6 Context packing for the agent
 
