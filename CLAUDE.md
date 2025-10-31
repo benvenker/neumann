@@ -17,7 +17,7 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 
 **Phase 2: Core Search Infrastructure** ✓ (In Progress)
 - `embeddings.py`: OpenAI text embeddings (text-embedding-3-small, 1536-dim)
-- `indexer.py`: ChromaDB integration with persistent storage
+- `indexer.py`: ChromaDB integration with persistent storage and semantic search
 - `models.py`: Pydantic schemas for summaries
 - `chunker.py`: Line-based text chunking with overlap
 - `config.py`: Centralized configuration management
@@ -145,7 +145,7 @@ Configuration is provided by `config.Config` (pydantic-settings), which reads en
   - Response count validation to catch mismatches early
   - Uses public OpenAI API imports (not private `_exceptions`)
   - Returns empty list for empty input (no error raised)
-- **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()` and `upsert_code_chunks()` helpers.
+- **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()`, `upsert_code_chunks()`, `lexical_search()`, and `semantic_search()` helpers. The `semantic_search()` function queries `search_summaries` using query embeddings, normalizes metadata fields (comma-separated strings → lists), and returns ranked results with relevance scores in [0,1] range.
 - **`chunker.py`**: Line-based text chunking with configurable size (default 180 lines) and overlap (default 30 lines). Ensures chunks stay under 16KB for Chroma Cloud compatibility.
 - Separate modules not yet wired into renderer CLI; indexing is a separate step at present.
 
@@ -354,7 +354,8 @@ uvicorn main:app --reload --port 8000
 - ✓ Add text embeddings using OpenAI
 - Add image embeddings using CLIP/SigLIP
 - ✓ Store embeddings in ChromaDB
-- ⏳ Hybrid search implementation
+- ✓ Semantic search over summaries (nm-22)
+- ⏳ Hybrid search implementation (nm-24)
 
 ### Phase 3: Search API
 - FastAPI web service
