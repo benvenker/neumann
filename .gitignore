@@ -54,4 +54,11 @@ uv.lock
 # Generated outputs
 output/
 output-*/
+out/
+
+# ChromaDB database
+chroma_data/
+
+# Tool directories
+.repoprompt/
 
