@@ -66,6 +66,11 @@ def build_summary_upsert_item(
     # Override doc_id to ensure consistency (front_matter uses different computation)
     meta["doc_id"] = doc_id
     meta["page_uris"] = page_uris
+    # Canonicalize language -> lang
+    if "lang" not in meta and "language" in meta:
+        meta["lang"] = meta.pop("language")
+    elif "lang" in meta and "language" in meta:
+        meta.pop("language", None)
     # Ensure last_updated is ISO string with proper UTC timezone
     if isinstance(meta.get("last_updated"), str):
         pass  # Already string
@@ -117,8 +122,7 @@ def build_chunk_upsert_items(
         meta = {
             "doc_id": doc_id,
             "source_path": str(src_path),
-            "language": lang,  # legacy
-            "lang": lang,  # standardized going forward
+            "lang": lang,
             "line_start": ch["line_start"],
             "line_end": ch["line_end"],
             "page_uris": ch["page_uris"],
@@ -147,7 +151,11 @@ def pretty_print_results(results: List[Dict[str, Any]]) -> None:
 
         uris = r.get("page_uris") or []
         if isinstance(uris, str):
-            uris = [uris]
+            s = uris.strip()
+            if s:
+                uris = [u.strip() for u in s.split(",")] if "," in s else [s]
+            else:
+                uris = []
         if uris:
             shown = uris[:MAX_PAGE_URIS]
             more = len(uris) - len(shown)

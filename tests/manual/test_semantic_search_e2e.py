@@ -63,19 +63,12 @@ def load_summary_file(summary_path: Path) -> dict[str, object]:
     # Extract doc_id for the ChromaDB id
     doc_id = front_matter.get("doc_id", summary_path.stem.replace(".summary", ""))
 
-    # Prepare metadata (convert lists to comma-separated strings for ChromaDB)
-    metadata = {}
-    for key, value in front_matter.items():
-        if isinstance(value, list):
-            # Convert lists to comma-separated strings for ChromaDB metadata
-            metadata[key] = ",".join(str(v) for v in value)
-        else:
-            metadata[key] = value
-
+    # Metadata normalization now handled by indexer.upsert_summaries
+    # No need to manually convert lists - indexer does it automatically
     return {
         "id": doc_id,
         "document": body,
-        "metadata": metadata,
+        "metadata": front_matter,
     }
 
 
