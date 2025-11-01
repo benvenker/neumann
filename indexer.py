@@ -22,6 +22,16 @@ LEX_LENGTH_ALPHA: float = 0.2  # strength of mild length penalty
 LEX_PATH_ONLY_BASELINE: float = 0.25  # baseline when only path_like matches
 LEX_PATH_FETCH_MULTIPLIER: int = 10  # multiplier for fetch limit when path filtering
 
+# Metadata keys that are normalized from comma-separated strings to lists on read
+NORMALIZED_META_LIST_KEYS: List[str] = [
+    "product_tags",
+    "key_topics",
+    "api_symbols",
+    "related_files",
+    "suggested_queries",
+    "page_uris",
+]
+
 
 def get_client(path: Optional[str] = None) -> ClientAPI:
     storage_path = path or config.CHROMA_PATH
@@ -68,7 +78,9 @@ def upsert_summaries(
     for item in items:
         ids.append(str(item["id"]))
         documents.append(str(item["document"]))
-        metadatas.append(item.get("metadata", {}))
+        raw_meta = item.get("metadata", {})
+        meta_map = raw_meta if isinstance(raw_meta, Mapping) else {}
+        metadatas.append(_normalize_metadata_for_chroma(meta_map))
 
     kwargs = {"ids": ids, "documents": documents, "metadatas": metadatas}
     if embedding_function is not None:
@@ -91,7 +103,9 @@ def upsert_code_chunks(
     for item in items:
         ids.append(str(item["id"]))
         documents.append(str(item["document"]))
-        metadatas.append(item.get("metadata", {}))
+        raw_meta = item.get("metadata", {})
+        meta_map = raw_meta if isinstance(raw_meta, Mapping) else {}
+        metadatas.append(_normalize_metadata_for_chroma(meta_map))
 
     code.upsert(ids=ids, documents=documents, metadatas=metadatas)  # type: ignore[arg-type]
     return len(ids)
@@ -295,6 +309,26 @@ def _parse_meta_list(value: object) -> List[str]:
     return []
 
 
+def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> Dict[str, object]:
+    """Convert metadata values to Chroma-acceptable primitives.
+    
+    - list -> comma-joined string (empty list -> "")
+    - primitives (str, int, float, bool, None) -> unchanged
+    - others (dict, Path, datetime, etc.) -> str(value)
+    """
+    if not meta:
+        return {}
+    out: Dict[str, object] = {}
+    for k, v in meta.items():
+        if isinstance(v, list):
+            out[k] = ",".join(str(x) for x in v) if v else ""
+        elif v is None or isinstance(v, (str, int, float, bool)):
+            out[k] = v
+        else:
+            out[k] = str(v)
+    return out
+
+
 def _distance_to_score(d: Optional[float]) -> float:
     """Convert Chroma distance to a bounded [0,1] relevance score (higher is better).
     
@@ -459,19 +493,11 @@ def lexical_search(
         doc_len = int(metrics.get("doc_len", 0))
 
         # Normalize metadata (same shape as semantic_search)
-        keys_to_normalize = [
-            "product_tags",
-            "key_topics",
-            "api_symbols",
-            "related_files",
-            "suggested_queries",
-            "page_uris",
-        ]
         metadata_norm = {
             "language": meta_dict.get("language") or meta_dict.get("lang"),
             "last_updated": meta_dict.get("last_updated"),
         }
-        for key in keys_to_normalize:
+        for key in NORMALIZED_META_LIST_KEYS:
             metadata_norm[key] = _parse_meta_list(meta_dict.get(key))
 
         page_uris = metadata_norm.get("page_uris", [])
@@ -591,19 +617,11 @@ def semantic_search(
             why.append(f"distance={dist:.3f}")
 
         # Normalize selected known list-like fields in metadata for consumers
-        keys_to_normalize = [
-            "product_tags",
-            "key_topics",
-            "api_symbols",
-            "related_files",
-            "suggested_queries",
-            "page_uris",
-        ]
         metadata_norm = {
-            "language": meta.get("language"),
+            "language": meta.get("language") or meta.get("lang"),
             "last_updated": meta.get("last_updated"),
         }
-        for key in keys_to_normalize:
+        for key in NORMALIZED_META_LIST_KEYS:
             metadata_norm[key] = _parse_meta_list(meta.get(key))
 
         # Note: page_uris appears both top-level (for convenience) and in metadata (for completeness)
