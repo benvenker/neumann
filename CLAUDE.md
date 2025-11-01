@@ -29,7 +29,9 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 ```
 neumann/
 ├── .beads/                  # Beads issue tracking (git-tracked)
-├── render_to_webp.py       # Main CLI script (render pipeline)
+├── main.py                  # Main CLI orchestrator (ingest, search, serve)
+├── render_to_webp.py       # Renderer-only CLI (legacy via neumann-render)
+├── ids.py                   # Canonical doc_id generation
 ├── embeddings.py            # OpenAI text embeddings
 ├── indexer.py               # ChromaDB integration
 ├── config.py                # Configuration management
@@ -45,9 +47,16 @@ neumann/
 └── chroma_data/             # Local ChromaDB storage (SQLite)
 ```
 
-Renderer (`render_to_webp.py`): Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL`. Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
+**Main CLI (`main.py`)**: Orchestrates the full pipeline with three subcommands:
+- `ingest`: render → summarize → chunk → index (full pipeline)
+- `search`: hybrid search with semantic + lexical matching
+- `serve`: HTTP server for output directory
 
-Defaults: `emit=pages`, `manifest=none`, `linenos=inline`, `tile_mode=bands`, `tile_overlap=0.10`. `pages.jsonl` is always emitted. Tile output and manifests are opt-in.
+**Renderer (`render_to_webp.py`)**: Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL` and `asset_root` (default: "out"). Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
+
+**Script entry points**: `neumann` → `main:main` (unified CLI), `neumann-render` → `render_to_webp:main` (renderer-only).
+
+Defaults: `emit=pages`, `manifest=none`, `linenos=inline`, `tile_mode=bands`, `tile_overlap=0.10`, `asset_root=out`. `pages.jsonl` is always emitted. Tile output and manifests are opt-in.
 
 ### Future Structure (as project grows)
 ```
@@ -132,8 +141,18 @@ Alternatives considered:
 - Pages manifest: `pages/pages.jsonl` (always written). Each record includes page metadata and `uri` built as `{ASSET_BASE_URL}/out/{doc_id}/pages/{file}.webp`.
 - Tile manifests: written only when tiling is enabled and `--manifest` ≠ `none`. Formats supported: JSONL, JSON, TSV.
 
+### Doc ID Generation
+Document IDs are computed via `ids.make_doc_id()` (canonical source):
+- Takes `Path` and optional `input_root`
+- When `input_root` is provided, computes relative path
+- When `input_root` is `None`, strips path anchor (`/`, `C:\`) for absolute paths
+- Replaces spaces with underscores in each path part
+- Joins parts with double underscores: `"__".join(part.replace(" ", "_") for part in parts)`
+- Used by `render_to_webp.render_file`, `main.compute_doc_id`, and `summarize.generate_doc_id_from_path`
+- Ensures consistency across render output, summaries, and search index
+
 ### Configuration
-Configuration is provided by `config.Config` (pydantic-settings), which reads environment variables and `.env`. Key settings include `ASSET_BASE_URL`, `CHROMA_PATH`, and chunking defaults (e.g., `tile_overlap`). The renderer uses `ASSET_BASE_URL` to build HTTP `uri` fields in `pages/pages.jsonl`.
+Configuration is provided by `config.Config` (pydantic-settings), which reads environment variables and `.env`. Key settings include `ASSET_BASE_URL`, `CHROMA_PATH`, and chunking defaults (e.g., `tile_overlap`). The renderer uses `ASSET_BASE_URL` and `RenderConfig.asset_root` (default: "out") to build HTTP `uri` fields in `pages/pages.jsonl` as: `f"{ASSET_BASE_URL}/{asset_root}/{doc_id}/pages/{filename}"`. `main.ingest` now passes `asset_root` derived from `out_dir.name` by default (unless overridden via `--asset-root`), ensuring URIs align with the chosen output directory structure.
 
 ### Summarization artifacts
 `summarize.py` and `models.py` produce `.summary.md` files consisting of YAML front matter plus a 200–400 word body (enforced by tests). The default generator is a stub used for tests; model providers can be integrated later. An example artifact lives in `output_summaries/`.
@@ -148,6 +167,28 @@ Configuration is provided by `config.Config` (pydantic-settings), which reads en
 - **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()`, `upsert_code_chunks()`, `lexical_search()`, `semantic_search()`, and `hybrid_search()` helpers. The `semantic_search()` function queries `search_summaries` using query embeddings, normalizes metadata fields (comma-separated strings → lists), and returns ranked results with relevance scores in [0,1] range. The `lexical_search()` function queries `search_code` using FTS (`$contains`) and regex (`$regex`) operators, with client-side path filtering. Returns results with lexical scores computed via `LexicalMetrics` TypedDict (includes per-term/per-regex match counts, raw scores, length penalty). Features: match count caps (LEX_TERM_CAP=3, LEX_REGEX_CAP=3) to prevent domination, hierarchical tie-breaking (categories → raw_hits → doc_len), path fetch multiplier (LEX_PATH_FETCH_MULTIPLIER=10) for better recall, normalized metadata matching `semantic_search` structure, and rich "why" signals with match counts from metrics (avoiding re-counting). The `hybrid_search()` function combines semantic and lexical channels using weighted-sum fusion (default 0.6 semantic + 0.4 lexical) with RRF tie-breaking (1-based ranks). Returns unified results with transparent scoring: `score` (final weighted), `sem_score`, `lex_score`, and `rrf_score` (tie-breaker).
 - **`chunker.py`**: Line-based text chunking with configurable size (default 180 lines) and overlap (default 30 lines). Ensures chunks stay under 16KB for Chroma Cloud compatibility.
 - Separate modules not yet wired into renderer CLI; indexing is a separate step at present.
+
+**Note on tiles-only rendering**: If rendering with `--emit tiles` only (renderer-only workflow), `render_to_webp` removes `pages_dir` and `pages.jsonl` is not emitted. Chunking expects `pages/pages.jsonl` to exist, so tiles-only rendering should not be used in workflows that require chunking. The default `emit=pages` behavior ensures pages are always available for chunking.
+
+### Performance and Memory Considerations
+
+**Current approach**: The `ingest` pipeline reads entire files into memory for summarization and chunking. This in-memory approach is suitable for prototype/proof-of-concept work and typical document sizes (< 1MB).
+
+**Memory behavior**:
+- Files are loaded completely before processing
+- Memory usage scales with file size (O(n) where n is file size)
+- Acceptable for code and documentation files
+- May be limiting for very large files (> 10MB)
+
+**Future improvements**:
+- **Streaming chunker**: Process files line-by-line without full memory load. Will maintain same chunk boundaries and overlap semantics as current implementation while reducing memory footprint to O(chunk_size) instead of O(file_size).
+- **Parallel batch processing**: Process multiple files concurrently for large document collections.
+- Currently tracked as Beads tasks for future implementation.
+
+**Recommendations**:
+- For production workloads with large files, consider splitting documents into smaller files
+- Use `--no-summary` flag to reduce memory pressure during chunking
+- Monitor memory usage and adjust accordingly
 
 ### Why JSONL for manifests?
 For tile manifests (when enabled):
@@ -403,21 +444,38 @@ python render_to_webp.py \
 ```
 
 ### CLI usage
-You can invoke via `python render_to_webp.py …` or the script entry `neumann` defined in `pyproject.toml`. Prefer `neumann` for consistency with packaging.
+The unified CLI is available via `neumann` (main entry point):
+- `neumann ingest --input-dir ./docs --out-dir ./out [--asset-root ROOT]`
+- `neumann search "query" [--k 12] [--must term] [--regex pattern] [--path-like substr]`
+- `neumann serve ./out [--asset-root ROOT] [--port 8000]`
 
-### Examples: enabling tiles and manifests
+For renderer-only workflows, use `neumann-render`:
+- `neumann-render --input-dir ./docs --out-dir ./out [--asset-root out]`
+
+The query argument in `search` is optional: omit it for lexical-only search when no OpenAI key is configured.
+
+### Examples: CLI usage
 ```bash
-# Generate pages only (default)
-neumann --input-dir ./docs --out-dir ./out
+# Full pipeline (ingest)
+neumann ingest --input-dir ./docs --out-dir ./out
 
-# Generate tiles (bands) and tile manifest (JSONL)
-neumann --input-dir ./docs --out-dir ./out \
-  --emit both --tile-mode bands --band-height 512 \
-  --manifest jsonl
+# Ingest with custom asset root
+neumann ingest --input-dir ./docs --out-dir ./output --asset-root output
 
-# Generate tiles (grid) with 20% overlap
-neumann --input-dir ./docs --out-dir ./out \
-  --emit both --tile-mode grid --tile-size 512 --tile-overlap 0.20
+# Search with semantic + lexical
+neumann search "vector store" --must chroma --path-like indexer.py
+
+# Lexical-only (no OpenAI key needed)
+neumann search --must auth --path-like auth.ts
+
+# Serve output directory
+neumann serve ./out
+
+# Serve with custom asset root
+neumann serve ./output --asset-root output
+
+# Renderer-only (legacy)
+neumann-render --input-dir ./docs --out-dir ./out --asset-root out
 ```
 
 ### Debug rendering issues
