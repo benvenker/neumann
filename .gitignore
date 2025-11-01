@@ -2,6 +2,9 @@
 node_modules/
 vendor/
 
+# Docs
+docs/chroma
+
 # Environment variables
 .env
 .env.local
@@ -65,3 +68,6 @@ chroma_data/
 # Tool directories
 .repoprompt/
 
+
+# Test outputs
+test_output/
