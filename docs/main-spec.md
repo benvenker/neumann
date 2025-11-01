@@ -64,7 +64,7 @@ Build a local-first datastore that lets an agent:
 
   1. **Semantic** over `search_summaries` (top‑k).
   2. **Lexical** over `search_code` with `where_document`: `$contains` for keywords + `$regex` for identifiers/IDs; optional `where` on `source_path`.
-  3. **Fuse** scores, group by `(doc_id)`, map to **page_uris**, and return a compact list of hits with "why" signals.
+  3. **Fuse** scores using weighted sum (0.6 semantic + 0.4 lexical by default), with RRF as tie-breaker; group by `(doc_id)`, map to **page_uris**, and return hits with "why" signals and transparent score breakdown.
 * Output (per hit): `{doc_id, source_path, score, page_uris, line_start?, line_end?, why[]}`.
 
 **Lexical search implementation details:**
