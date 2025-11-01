@@ -53,56 +53,135 @@ direnv allow
 
 ## Usage
 
-### Basic Example
+### CLI Overview
 
-By default, renders pages only (no tiles, no manifest):
+Neumann provides a unified CLI with three main commands:
 
-```bash
-python render_to_webp.py \
-  --input-dir ./docs \
-  --out-dir ./output
-```
+- **`neumann ingest`**: Full pipeline (render → summarize → chunk → index)
+- **`neumann search`**: Hybrid search (semantic + lexical)
+- **`neumann serve`**: HTTP server for output directory
 
-This creates WebP page images suitable for preview and basic search. Tiles are optional and only generated when explicitly requested.
+For renderer-only usage (legacy), use **`neumann-render`** instead of `neumann`.
 
-### Optional: Generate Tiles for Search
+### Ingest: Full Pipeline
 
-To generate overlapping tiles for image embedding and hybrid search:
+The `ingest` command processes files through the entire pipeline:
 
 ```bash
-python render_to_webp.py \
-  --input-dir ./docs \
-  --out-dir ./output \
-  --emit both \
-  --manifest jsonl
+# Basic ingest (requires OPENAI_API_KEY for summaries)
+neumann ingest --input-dir ./docs --out-dir ./out
+
+# Skip summarization (no OpenAI key needed)
+neumann ingest --input-dir ./docs --out-dir ./out --no-summary
+
+# Skip indexing (useful for testing rendering)
+neumann ingest --input-dir ./docs --out-dir ./out --no-index
+
+# Custom asset root (match output directory name)
+neumann ingest --input-dir ./docs --out-dir ./output --asset-root output
 ```
 
-### Full Example with Options
+By default, `asset_root` is derived from `out_dir.name`, so URIs in `pages.jsonl` align with your chosen output directory.
+
+This creates:
+- WebP page images in `<out_dir>/<doc_id>/pages/`
+- Summary files in `<out_dir>/<doc_id>/summary.summary.md`
+- Indexed summaries and code chunks in ChromaDB
+
+### Search: Hybrid Search
+
+Search combines semantic and lexical matching:
 
 ```bash
-python render_to_webp.py \
-  --input-dir ./my_docs \
-  --out-dir ./out \
-  --page-width-px 1200 \
-  --body-font-size 15 \
-  --code-font-size 14 \
-  --line-height 1.45 \
-  --dpi 200 \
-  --webp-quality 90 \
-  --tile-size 1024 \
-  --tile-overlap 0.10 \
-  --emit both \
-  --manifest jsonl
+# Semantic search (requires OPENAI_API_KEY)
+neumann search "vector store" --k 5
+
+# Lexical-only search (no OpenAI key needed)
+neumann search --must chroma --path-like indexer.py
+
+# Hybrid search (semantic + lexical)
+neumann search "authentication" --must redirect_uri --path-like auth.ts
+
+# JSON output for programmatic use
+neumann search "query" --json
 ```
 
-### Options
+### Serve: HTTP Server
+
+Start a local HTTP server to serve rendered output:
+
+```bash
+# Serve output directory (auto-detects 'out' directory)
+neumann serve ./out
+
+# Custom port
+neumann serve ./out --port 8080
+
+# Custom asset root
+neumann serve ./out --asset-root out
+
+# Serve parent directory (for custom output names)
+neumann serve ./
+
+# Serve with custom asset root
+neumann serve ./output --asset-root output
+```
+
+The `serve` command automatically detects directory structure to match URI schemes. Use `--asset-root` to explicitly set the root path segment used in asset URIs, which determines which directory level to serve so `/asset_root/...` resolves correctly.
+
+### Renderer-Only: Legacy Command
+
+For renderer-only workflows (no summarization/indexing), use `neumann-render`:
+
+```bash
+# Basic rendering
+neumann-render --input-dir ./docs --out-dir ./out
+
+# With tiles
+neumann-render --input-dir ./docs --out-dir ./out --emit both --manifest jsonl
+
+# Custom asset root (for URI customization)
+neumann-render --input-dir ./docs --out-dir ./output --asset-root output
+```
+
+### URI Configuration and Asset Serving
+
+URIs in `pages.jsonl` are constructed as:
+```
+{ASSET_BASE_URL}/{asset_root}/{doc_id}/pages/{filename}
+```
+
+By default:
+- `ASSET_BASE_URL`: `http://127.0.0.1:8000` (set via `.env` or environment)
+- `asset_root`: Defaults to `out_dir.name` in `ingest` command, or `out` in `neumann-render` (configurable via `--asset-root`)
+
+URIs are now constructed using `asset_root`, which defaults to `out_dir.name` in the `ingest` command. This ensures URIs align with your chosen output directory structure.
+
+**Important**: For URIs to resolve correctly:
+1. Use an output directory and let `asset_root` default to its name, OR
+2. Explicitly set `--asset-root` to match your serving setup, OR
+3. Use `neumann serve` on the parent directory (auto-detects `out` directory)
+
+Example: If `out_dir` is `./output`, URIs will default to `/output/...` (matching the directory name). To override:
+- Use `--asset-root out` in the `ingest` command, OR
+- Serve parent directory: `neumann serve ./` (serves parent, so `/out/...` or `/output/...` resolves from root)
+
+### Configuration
+
+Key environment variables (set in `.env` or export):
+- `OPENAI_API_KEY`: Required for summarization and semantic search
+- `ASSET_BASE_URL`: Base URL for asset URIs (default: `http://127.0.0.1:8000`)
+- `CHROMA_PATH`: Path to ChromaDB storage (default: `./chroma_data`)
+
+### Renderer Options (neumann-render)
 
 - `--input-dir`: Directory containing Markdown and/or code files (required)
 - `--out-dir`: Output directory for PDFs and WebP files (required)
+- `--asset-root`: Root path segment for asset URIs (default: `out`)
 - `--page-width-px`: Page width in pixels (default: 1200)
 - `--body-font-size`: Base font size for body text (default: 15)
 - `--code-font-size`: Font size for code blocks (default: 14)
-- `--line-height`: Line height multiplier (default: 1.45)
+- `--line-height`: Line height multiplier (default: 1.4)
 - `--pygments-style`: Pygments color scheme (default: "friendly")
 - `--extra-css-path`: Optional path to additional CSS file
 - `--dpi`: Rasterization DPI for PDF to image conversion (default: 200)
@@ -119,31 +198,37 @@ python render_to_webp.py \
 ### Default (Pages Only)
 
 ```
-output/
-├── document__example.md/
-│   ├── example.pdf
-│   └── pages/
-│       ├── example-p001.webp
-│       ├── example-p002.webp
-│       └── pages.txt
-```
-
-### With Tiles (--emit both or --emit tiles)
-
-```
-output/
+out/
 ├── document__example.md/
 │   ├── example.pdf
 │   ├── pages/
 │   │   ├── example-p001.webp
 │   │   ├── example-p002.webp
-│   │   └── pages.txt
-│   └── tiles/
-│       ├── example-p001-x0-y0.webp
-│       ├── example-p001-x0-y922.webp
-│       ├── ...
-│       └── tiles.jsonl  (only if --manifest is specified)
+│   │   ├── pages.txt
+│   │   └── pages.jsonl
+│   └── summary.summary.md  (if summarization enabled)
 ```
+
+### With Tiles (--emit both or --emit tiles)
+
+```
+out/
+├── document__example.md/
+│   ├── example.pdf
+│   ├── pages/
+│   │   ├── example-p001.webp
+│   │   ├── example-p002.webp
+│   │   ├── pages.txt
+│   │   └── pages.jsonl
+│   ├── tiles/
+│   │   ├── example-p001-x0-y0.webp
+│   │   ├── example-p001-x0-y922.webp
+│   │   ├── ...
+│   │   └── tiles.jsonl  (only if --manifest is specified)
+│   └── summary.summary.md
+```
+
+**Note**: Chunking expects `pages/pages.jsonl` to exist. If rendering with `--emit tiles` only (renderer-only workflow), `pages_dir` is removed and chunking will not find `pages.jsonl`. Ensure your ingest render stage emits pages (default behavior).
 
 ### Manifest Format (JSONL example)
 
@@ -214,10 +299,37 @@ tmux attach -t neumann-api
 
 Sessions follow the naming pattern: `neumann-<purpose>` (e.g., `neumann-api`, `neumann-worker`)
 
+## Doc ID Format
+
+Document IDs (`doc_id`) are computed from file paths:
+- Relative to input directory (or anchor-stripped for absolute paths)
+- Spaces replaced with underscores
+- Path separators replaced with double underscores
+
+Example: `docs/app/auth page.tsx` → `app__auth_page.tsx`
+
+This ensures consistency across render output, summaries, and search index.
+
+## Performance Considerations
+
+The current `ingest` pipeline reads entire files into memory for summarization and chunking. This approach is acceptable for most use cases but may increase memory usage for very large files.
+
+**Current behavior**:
+- Files are read completely into memory before processing
+- Memory usage scales with file size
+- Suitable for typical code and documentation files (< 1MB)
+
+**Future improvements**:
+- Streaming chunker to process files line-by-line without full memory load
+- Parallel batch processing for large document collections
+
+For production workloads with very large files (> 10MB), consider using `--no-summary` to reduce memory pressure, or splitting documents into smaller files.
+
 ## Roadmap
 
-- [ ] Hybrid search with text and image embeddings
-- [ ] ChromaDB integration for vector storage
+- [x] Hybrid search with text and image embeddings
+- [x] ChromaDB integration for vector storage
+- [ ] Image embeddings (CLIP/SigLIP)
 - [ ] OCR support for image-based PDFs
 - [ ] Batch processing with parallel workers
 - [ ] Web UI for search and preview
