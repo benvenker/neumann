@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import random
 import time
 from pathlib import Path
@@ -8,7 +9,10 @@ from typing import Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
+
 from config import config
+from ids import make_doc_id_from_str
 from models import FileSummary, SummaryFrontMatter
 
 _EXT_TO_LANGUAGE = {
@@ -23,10 +27,15 @@ _EXT_TO_LANGUAGE = {
 
 
 def generate_doc_id_from_path(source_path: str) -> str:
-    p = Path(source_path)
-    # Stable, URL/path-friendly id; replace separators with double underscore
-    parts = list(p.parts)
-    return "__".join([part.replace(" ", "_") for part in parts])
+    """Generate doc_id using canonical ids.make_doc_id_from_str.
+
+    Args:
+        source_path: File path as string
+
+    Returns:
+        doc_id string with spaces replaced by underscores
+    """
+    return make_doc_id_from_str(source_path)
 
 
 def detect_language_from_extension(source_path: str) -> str:
@@ -159,6 +168,7 @@ def _openai_structured_summary(
                     except Exception:
                         pass
                 # Fallback to json_object format (less strict, but more compatible)
+                logger.debug("Falling back from response_format=json_schema to json_object: %s", error_msg)
                 resp = client.chat.completions.create(
                     model=model,
                     messages=[

@@ -38,6 +38,7 @@ from pygments.lexers import TextLexer, guess_lexer_for_filename
 # HTML ➜ PDF
 from weasyprint import HTML
 from config import config as app_config
+from ids import make_doc_id
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {
@@ -98,6 +99,7 @@ class RenderConfig:
 
     linenos: str = "inline"  # inline | table | none  (code files only)
     input_dir: pathlib.Path = pathlib.Path(".")
+    asset_root: str = "out"  # root path segment for asset URIs
 
 
 def read_text(path: pathlib.Path) -> str:
@@ -371,8 +373,7 @@ def sanitize_title(path: pathlib.Path) -> str:
 
 
 def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfig) -> None:
-    rel = src_path.relative_to(cfg.input_dir)
-    doc_id = rel.as_posix().replace("/", "__")
+    doc_id = make_doc_id(src_path, cfg.input_dir)
     dest_dir = out_root / doc_id
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -410,9 +411,9 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
             width, height = im.size
         file_bytes = wp.stat().st_size
         sha = sha256_file(wp)
-        # Build HTTP URI using ASSET_BASE_URL
+        # Build HTTP URI using ASSET_BASE_URL and asset_root
         # Output structure: <out_root>/<doc_id>/pages/<filename>
-        uri = f"{app_config.ASSET_BASE_URL}/out/{doc_id}/pages/{wp.name}"
+        uri = f"{app_config.ASSET_BASE_URL}/{cfg.asset_root}/{doc_id}/pages/{wp.name}"
         pages_records.append(
             {
                 "doc_id": doc_id,
@@ -511,6 +512,7 @@ def parse_args() -> argparse.Namespace:
     )
     ap.add_argument("--input-dir", required=True, type=pathlib.Path, help="Directory containing .md and/or code files.")
     ap.add_argument("--out-dir", required=True, type=pathlib.Path, help="Output directory to write PDFs/WebPs.")
+    ap.add_argument("--asset-root", type=str, default="out", help="Root path segment for asset URIs (default: 'out').")
 
     # layout & style
     ap.add_argument("--page-width-px", type=int, default=1200)
@@ -578,6 +580,7 @@ def main() -> None:
         band_height=args.band_height,
         linenos=args.linenos,
         input_dir=args.input_dir,
+        asset_root=args.asset_root,
     )
 
     sources = discover_sources(args.input_dir)
