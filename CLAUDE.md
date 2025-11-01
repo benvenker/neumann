@@ -145,7 +145,7 @@ Configuration is provided by `config.Config` (pydantic-settings), which reads en
   - Response count validation to catch mismatches early
   - Uses public OpenAI API imports (not private `_exceptions`)
   - Returns empty list for empty input (no error raised)
-- **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()`, `upsert_code_chunks()`, `lexical_search()`, and `semantic_search()` helpers. The `semantic_search()` function queries `search_summaries` using query embeddings, normalizes metadata fields (comma-separated strings → lists), and returns ranked results with relevance scores in [0,1] range.
+- **`indexer.py`**: ChromaDB integration with PersistentClient for local SQLite storage. Manages two collections: `search_summaries` (with embeddings) and `search_code` (FTS/regex only). Provides `upsert_summaries()`, `upsert_code_chunks()`, `lexical_search()`, `semantic_search()`, and `hybrid_search()` helpers. The `semantic_search()` function queries `search_summaries` using query embeddings, normalizes metadata fields (comma-separated strings → lists), and returns ranked results with relevance scores in [0,1] range. The `lexical_search()` function queries `search_code` using FTS (`$contains`) and regex (`$regex`) operators, with client-side path filtering. Returns results with lexical scores computed via `LexicalMetrics` TypedDict (includes per-term/per-regex match counts, raw scores, length penalty). Features: match count caps (LEX_TERM_CAP=3, LEX_REGEX_CAP=3) to prevent domination, hierarchical tie-breaking (categories → raw_hits → doc_len), path fetch multiplier (LEX_PATH_FETCH_MULTIPLIER=10) for better recall, normalized metadata matching `semantic_search` structure, and rich "why" signals with match counts from metrics (avoiding re-counting). The `hybrid_search()` function combines semantic and lexical channels using weighted-sum fusion (default 0.6 semantic + 0.4 lexical) with RRF tie-breaking (1-based ranks). Returns unified results with transparent scoring: `score` (final weighted), `sem_score`, `lex_score`, and `rrf_score` (tie-breaker).
 - **`chunker.py`**: Line-based text chunking with configurable size (default 180 lines) and overlap (default 30 lines). Ensures chunks stay under 16KB for Chroma Cloud compatibility.
 - Separate modules not yet wired into renderer CLI; indexing is a separate step at present.
 
@@ -355,7 +355,7 @@ uvicorn main:app --reload --port 8000
 - Add image embeddings using CLIP/SigLIP
 - ✓ Store embeddings in ChromaDB
 - ✓ Semantic search over summaries (nm-22)
-- ⏳ Hybrid search implementation (nm-24)
+- ✓ Hybrid search implementation (nm-24)
 
 ### Phase 3: Search API
 - FastAPI web service

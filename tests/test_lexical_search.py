@@ -369,3 +369,46 @@ def test_page_uris_handled_as_string_or_list(tmp_path: Path) -> None:
     assert isinstance(results[1]["page_uris"], list)
     assert len(results[0]["page_uris"]) == 2
     assert len(results[1]["page_uris"]) == 1
+
+
+def test_regex_scoring_and_ordering(tmp_path: Path) -> None:
+    """Regex scoring should contribute to ordering with tie-breakers."""
+    client = get_client(str(tmp_path / "chroma"))
+    
+    upsert_code_chunks(
+        [
+            {
+                "id": "chunk1",
+                "document": "authUser authUser authUser",  # 3 regex matches
+                "metadata": {
+                    "doc_id": "file1",
+                    "source_path": "src/a.ts",
+                    "lang": "ts",
+                    "line_start": 1,
+                    "line_end": 5,
+                },
+            },
+            {
+                "id": "chunk2",
+                "document": "authUser",  # 1 regex match
+                "metadata": {
+                    "doc_id": "file2",
+                    "source_path": "src/b.ts",
+                    "lang": "ts",
+                    "line_start": 1,
+                    "line_end": 5,
+                },
+            },
+        ],
+        client=client,
+    )
+    
+    # Pattern that matches 'authUser' literally
+    results = lexical_search(regexes=[r"authUser"], k=10, client=client)
+    
+    assert len(results) == 2
+    # Verify explainability mentions regex
+    assert any("matched regex" in w for w in results[0]["why"])
+    # Verify ordering by score (capped but tie-breakers ensure file1 comes first)
+    assert results[0]["doc_id"] == "file1"
+    assert results[1]["doc_id"] == "file2"
