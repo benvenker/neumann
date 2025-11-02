@@ -40,7 +40,7 @@ def test_normalize_metadata_for_chroma_primitives():
 def test_normalize_metadata_for_chroma_non_primitives():
     """Test non-primitives are stringified."""
     from datetime import datetime
-    
+
     meta = {
         "d": {"k": "v"},
         "dt": datetime(2025, 1, 1, 12, 0, 0),
@@ -91,4 +91,3 @@ def test_normalized_meta_list_keys_constant():
         "page_uris",
     }
     assert set(NORMALIZED_META_LIST_KEYS) == expected
-

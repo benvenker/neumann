@@ -109,7 +109,10 @@ def test_handles_rate_limit_errors():
 
     # Need to provide response parameter (httpx.Response mock)
     mock_http_response = MagicMock()
-    mock_embeddings_create.side_effect = [RateLimitError("Rate limit", response=mock_http_response, body=None), mock_response]
+    mock_embeddings_create.side_effect = [
+        RateLimitError("Rate limit", response=mock_http_response, body=None),
+        mock_response,
+    ]
 
     mock_client.embeddings.create = mock_embeddings_create
 
@@ -162,9 +165,7 @@ def test_handles_api_errors():
 
     # Raise API error (e.g., invalid API key)
     mock_http_request = MagicMock()
-    mock_embeddings_create.side_effect = APIError(
-        "Invalid API key", request=mock_http_request, body=None
-    )
+    mock_embeddings_create.side_effect = APIError("Invalid API key", request=mock_http_request, body=None)
 
     mock_client.embeddings.create = mock_embeddings_create
 
@@ -223,4 +224,3 @@ def test_large_batch_splits_automatically():
         assert len(result) == 2548
         # Should have called API twice
         assert mock_embeddings_create.call_count == 2
-

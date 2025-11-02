@@ -9,12 +9,13 @@ Commands:
 """
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
 from datetime import timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from tqdm import tqdm
 
@@ -23,7 +24,7 @@ from config import config
 from embeddings import embed_texts
 from ids import make_doc_id
 from indexer import get_client, hybrid_search, upsert_code_chunks, upsert_summaries
-from models import FileSummary, SummaryFrontMatter
+from models import FileSummary
 from render_to_webp import RenderConfig, discover_sources, render_file
 from summarize import (
     detect_language_from_extension,
@@ -49,9 +50,7 @@ def compute_doc_id(src: Path, input_root: Path) -> str:
     return make_doc_id(src, input_root)
 
 
-def build_summary_upsert_item(
-    fs: FileSummary, doc_id: str, page_uris: List[str]
-) -> Dict[str, Any]:
+def build_summary_upsert_item(fs: FileSummary, doc_id: str, page_uris: list[str]) -> dict[str, Any]:
     """Build a summary upsert item for ChromaDB.
 
     Args:
@@ -94,9 +93,7 @@ def build_summary_upsert_item(
     }
 
 
-def build_chunk_upsert_items(
-    raw_text: str, src_path: Path, doc_id: str, pages_jsonl: Path
-) -> List[Dict[str, Any]]:
+def build_chunk_upsert_items(raw_text: str, src_path: Path, doc_id: str, pages_jsonl: Path) -> list[dict[str, Any]]:
     """Build code chunk upsert items from raw text.
 
     Args:
@@ -116,7 +113,7 @@ def build_chunk_upsert_items(
     )
     lang = detect_language_from_extension(str(src_path))
 
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for ch in chunks:
         cid = f"{doc_id}#L{ch['line_start']}-{ch['line_end']}"
         meta = {
@@ -132,7 +129,7 @@ def build_chunk_upsert_items(
     return items
 
 
-def pretty_print_results(results: List[Dict[str, Any]]) -> None:
+def pretty_print_results(results: list[dict[str, Any]]) -> None:
     """Pretty-print search results to stdout.
 
     Args:
@@ -152,10 +149,7 @@ def pretty_print_results(results: List[Dict[str, Any]]) -> None:
         uris = r.get("page_uris") or []
         if isinstance(uris, str):
             s = uris.strip()
-            if s:
-                uris = [u.strip() for u in s.split(",")] if "," in s else [s]
-            else:
-                uris = []
+            uris = ([u.strip() for u in s.split(",")] if "," in s else [s]) if s else []
         if uris:
             shown = uris[:MAX_PAGE_URIS]
             more = len(uris) - len(shown)
@@ -262,9 +256,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 if client and not args.no_index:
                     try:
                         if summary_item and config.has_openai_key:
-                            upsert_summaries(
-                                [summary_item], client=client, embedding_function=embed_texts
-                            )
+                            upsert_summaries([summary_item], client=client, embedding_function=embed_texts)
                             indexed_summaries += 1
 
                         if chunk_items:
@@ -397,10 +389,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
         except KeyboardInterrupt:
             print("\nShutting down server...")
             proc.terminate()
-            try:
+            with contextlib.suppress(KeyboardInterrupt):
                 proc.wait()
-            except KeyboardInterrupt:
-                pass  # Ignore repeated signal during shutdown
     except OSError as e:
         print(f"Failed to start server: {e}", file=sys.stderr)
         return 1
@@ -421,9 +411,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # ingest subcommand
-    ingest_parser = subparsers.add_parser(
-        "ingest", help="Render → summarize → chunk → index"
-    )
+    ingest_parser = subparsers.add_parser("ingest", help="Render → summarize → chunk → index")
     ingest_parser.add_argument(
         "--input-dir",
         type=Path,
@@ -467,9 +455,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="Natural language query (optional; use lexical filters for lexical-only search)",
     )
-    search_parser.add_argument(
-        "--k", type=int, default=12, help="Number of results to return (default: 12)"
-    )
+    search_parser.add_argument("--k", type=int, default=12, help="Number of results to return (default: 12)")
     search_parser.add_argument(
         "--must",
         action="append",
@@ -486,19 +472,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Substring to match in source path",
     )
-    search_parser.add_argument(
-        "--json", action="store_true", help="Output raw JSON"
-    )
+    search_parser.add_argument("--json", action="store_true", help="Output raw JSON")
     search_parser.epilog = (
-        "Examples:\n"
-        "  neumann search 'vector store' --k 5\n"
-        "  neumann search '' --must chroma --path-like indexer.py\n"
+        "Examples:\n  neumann search 'vector store' --k 5\n  neumann search '' --must chroma --path-like indexer.py\n"
     )
 
     # serve subcommand
-    serve_parser = subparsers.add_parser(
-        "serve", help="Start http.server to serve output"
-    )
+    serve_parser = subparsers.add_parser("serve", help="Start http.server to serve output")
     serve_parser.add_argument(
         "out_dir",
         type=Path,
@@ -545,4 +525,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
