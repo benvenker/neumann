@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 # Chroma Cloud maximum document size in bytes
 CHROMA_CLOUD_DOC_MAX_BYTES = 16_384
 
 
-def load_page_uris(pages_jsonl_path: Path) -> List[str]:
+def load_page_uris(pages_jsonl_path: Path) -> list[str]:
     """Load and return sorted page URIs from pages.jsonl.
 
     Reads pages.jsonl, extracts URIs sorted by page number, and returns a deduplicated list.
@@ -23,7 +23,7 @@ def load_page_uris(pages_jsonl_path: Path) -> List[str]:
     if not pages_jsonl_path.exists():
         return []
 
-    uris: List[Tuple[int, str]] = []
+    uris: list[tuple[int, str]] = []
     try:
         for line in pages_jsonl_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -37,14 +37,14 @@ def load_page_uris(pages_jsonl_path: Path) -> List[str]:
             except (json.JSONDecodeError, ValueError, KeyError, TypeError):
                 # Skip malformed JSONL rows
                 continue
-    except (OSError, IOError, UnicodeDecodeError):
+    except (OSError, UnicodeDecodeError):
         # File unreadable
         return []
 
     # Sort by page and dedupe preserving order
     uris.sort(key=lambda t: t[0] or 0)
     seen = set()
-    out: List[str] = []
+    out: list[str] = []
     for _, u in uris:
         if u not in seen:
             seen.add(u)
@@ -52,7 +52,7 @@ def load_page_uris(pages_jsonl_path: Path) -> List[str]:
     return out
 
 
-def _split_line_by_bytes(s: str, max_bytes: int) -> List[str]:
+def _split_line_by_bytes(s: str, max_bytes: int) -> list[str]:
     """Split a string into byte-safe chunks respecting UTF-8 character boundaries.
 
     Args:
@@ -63,7 +63,7 @@ def _split_line_by_bytes(s: str, max_bytes: int) -> List[str]:
         List of string chunks, each <= max_bytes when encoded as UTF-8
     """
     b = s.encode("utf-8")
-    out: List[str] = []
+    out: list[str] = []
     i = 0
     while i < len(b):
         j = min(len(b), i + max_bytes)
@@ -81,7 +81,7 @@ def chunk_file_by_lines(
     pages_jsonl_path: Path,
     per_chunk: int = 180,
     overlap: int = 30,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Split text into overlapping line-based chunks with byte limit enforcement.
 
     Chunks the input text into overlapping windows of approximately `per_chunk` lines
@@ -130,7 +130,7 @@ def chunk_file_by_lines(
     if n == 0:
         return []
 
-    chunks: List[Dict[str, Any]] = []
+    chunks: list[dict[str, Any]] = []
     start = 0
 
     while start < n:
@@ -180,4 +180,3 @@ def chunk_file_by_lines(
 
 
 __all__ = ["chunk_file_by_lines", "load_page_uris", "CHROMA_CLOUD_DOC_MAX_BYTES"]
-

@@ -94,9 +94,7 @@ def _embed_batch_with_retry(
 
             # Verify response count matches input count
             if len(response.data) != len(batch):
-                raise ValueError(
-                    f"OpenAI embeddings count mismatch: expected {len(batch)}, got {len(response.data)}"
-                )
+                raise ValueError(f"OpenAI embeddings count mismatch: expected {len(batch)}, got {len(response.data)}")
 
             # Extract embeddings from response
             embeddings = [item.embedding for item in response.data]
@@ -138,4 +136,3 @@ def _embed_batch_with_retry(
     # Should never reach here, but mypy requires it
     assert last_error is not None
     raise last_error
-

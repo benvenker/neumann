@@ -24,8 +24,8 @@ import yaml
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from embeddings import embed_texts
-from indexer import get_client, semantic_search, upsert_summaries
+from embeddings import embed_texts  # noqa: E402
+from indexer import get_client, semantic_search, upsert_summaries  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -285,7 +285,7 @@ def main():
     # Check test_output_summaries first (has real summaries), fallback to output_summaries
     test_summaries_dir = project_root / "test_output_summaries"
     output_summaries_dir = project_root / "output_summaries"
-    
+
     if test_summaries_dir.exists() and any(test_summaries_dir.glob("*.summary.md")):
         summaries_dir = test_summaries_dir
         logger.info("Using test_output_summaries (has real summaries)")
@@ -293,7 +293,7 @@ def main():
         summaries_dir = output_summaries_dir
     else:
         summaries_dir = test_summaries_dir  # Will fail with clear error
-    
+
     chroma_path = project_root / "chroma_data"
 
     if not summaries_dir.exists():
@@ -355,4 +355,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

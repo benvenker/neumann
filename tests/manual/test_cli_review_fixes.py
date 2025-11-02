@@ -36,16 +36,14 @@ logger = logging.getLogger(__name__)
 def run_command(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
     """Run a command and return (returncode, stdout, stderr)."""
     logger.info(f"Running: {' '.join(cmd)}")
-    
+
     # Use the project's Python if running with python -m main
     if cmd[0] == "python" and len(cmd) > 1 and cmd[1] == "-m":
         venv_python = project_root / ".venv" / "bin" / "python"
         if venv_python.exists():
             cmd = [str(venv_python)] + cmd[1:]
-    
-    result = subprocess.run(
-        cmd, capture_output=True, text=True, cwd=cwd or project_root
-    )
+
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd or project_root)
     logger.debug(f"Return code: {result.returncode}")
     if result.stdout:
         logger.debug(f"STDOUT:\n{result.stdout}")
@@ -66,9 +64,7 @@ def test_hybrid_search_keyword_args():
 
     if config.has_openai_key:
         logger.info("OpenAI key available - testing semantic search")
-        rc, stdout, stderr = run_command(
-            ["python", "-m", "main", "search", "vector store", "--k", "3"]
-        )
+        rc, stdout, stderr = run_command(["python", "-m", "main", "search", "vector store", "--k", "3"])
         if rc == 0:
             logger.info("✓ Semantic search executed successfully")
             logger.info("  (keyword args fix verified - no test failure)")
@@ -81,9 +77,7 @@ def test_hybrid_search_keyword_args():
 
     # Test lexical-only search path (no OpenAI key needed)
     logger.info("\n1.2 Testing lexical-only search path...")
-    rc, stdout, stderr = run_command(
-        ["python", "-m", "main", "search", "--must", "chroma", "--k", "3"]
-    )
+    rc, stdout, stderr = run_command(["python", "-m", "main", "search", "--must", "chroma", "--k", "3"])
     if rc == 0:
         logger.info("✓ Lexical-only search executed successfully")
         logger.info("  (keyword args fix verified - no test failure)")
@@ -95,9 +89,7 @@ def test_hybrid_search_keyword_args():
 
     # Test empty query (should use lexical-only path)
     logger.info("\n1.3 Testing empty query (lexical-only fallback)...")
-    rc, stdout, stderr = run_command(
-        ["python", "-m", "main", "search", "", "--must", "test", "--k", "3"]
-    )
+    rc, stdout, stderr = run_command(["python", "-m", "main", "search", "", "--must", "test", "--k", "3"])
     if rc == 0 or rc == 2:  # rc=2 is expected when no matches
         logger.info("✓ Empty query handled correctly")
     else:
@@ -152,13 +144,9 @@ def test_asset_root_configurability():
                         data = json.loads(first_line)
                         uri = data.get("uri", "")
                         if "test_output" in uri:
-                            logger.info(
-                                f"✓ URI uses 'test_output' as asset_root: {uri[:80]}..."
-                            )
+                            logger.info(f"✓ URI uses 'test_output' as asset_root: {uri[:80]}...")
                         else:
-                            logger.warning(
-                                f"⚠ URI doesn't match expected asset_root: {uri[:80]}..."
-                            )
+                            logger.warning(f"⚠ URI doesn't match expected asset_root: {uri[:80]}...")
             else:
                 logger.warning("⚠ pages.jsonl not found")
         else:
@@ -352,4 +340,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

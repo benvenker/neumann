@@ -1,14 +1,11 @@
 import hashlib
 from pathlib import Path
 
-import pytest
-
 from indexer import (
     LEX_PATH_ONLY_BASELINE,
     get_client,
     hybrid_search,
     lexical_search,
-    semantic_search,
     upsert_code_chunks,
     upsert_summaries,
 )
@@ -487,8 +484,7 @@ def test_hybrid_with_path_only_lexical(tmp_path: Path) -> None:
 
     # Verify lex_score >= baseline
     assert doc1_result["lex_score"] >= LEX_PATH_ONLY_BASELINE, (
-        f"Path-only lexical should have lex_score >= {LEX_PATH_ONLY_BASELINE}, "
-        f"got {doc1_result['lex_score']}"
+        f"Path-only lexical should have lex_score >= {LEX_PATH_ONLY_BASELINE}, got {doc1_result['lex_score']}"
     )
 
     # Verify combined score > w_semantic * sem_score (i.e., path baseline contributed)
@@ -499,4 +495,3 @@ def test_hybrid_with_path_only_lexical(tmp_path: Path) -> None:
         f"Combined score {doc1_result['score']:.4f} should be > "
         f"{expected_min:.4f} (w_semantic * sem_score) due to path baseline"
     )
-

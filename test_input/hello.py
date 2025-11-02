@@ -2,7 +2,6 @@
 """Sample Python file for testing code-to-HTML rendering."""
 
 
-
 def greet(name: str, enthusiastic: bool = False) -> str:
     """Generate a greeting message.
 
