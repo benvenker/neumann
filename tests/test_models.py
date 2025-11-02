@@ -56,5 +56,3 @@ def test_to_yaml_serialization_contains_expected_fields() -> None:
     fm_yaml = parts[1]
     assert "doc_id: abc" in fm_yaml
     assert "source_path: src/module.py" in fm_yaml
-
-

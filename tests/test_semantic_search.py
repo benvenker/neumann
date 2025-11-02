@@ -1,23 +1,22 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Sequence
-
-import pytest
 
 from indexer import get_client, semantic_search, upsert_summaries
 
 
-def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], List[List[float]]]:
+def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], list[list[float]]]:
     """Create a deterministic fake embedding function for testing.
-    
+
     Args:
         dimension: Embedding dimension (default 1536 to match OpenAI text-embedding-3-small)
-    
+
     Returns:
         Callable that returns deterministic embeddings based on text hash
     """
-    def embed(texts: Sequence[str]) -> List[List[float]]:
+
+    def embed(texts: Sequence[str]) -> list[list[float]]:
         embeddings = []
         for text in texts:
             # Generate deterministic embedding based on text hash
@@ -28,6 +27,7 @@ def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], 
             vec = [float((hash_val + i) % 100) / 100.0 for i in range(dimension)]
             embeddings.append(vec)
         return embeddings
+
     return embed
 
 
@@ -142,7 +142,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
 
     # Create embeddings where query embedding is closest to doc1, then doc2, then doc3
     # We'll use a simple distance-based approach
-    def controlled_embed(texts: Sequence[str]) -> List[List[float]]:
+    def controlled_embed(texts: Sequence[str]) -> list[list[float]]:
         """Create embeddings where first text is closest to query embedding."""
         embeddings = []
         for text in texts:
@@ -163,7 +163,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
         return embeddings
 
     # Query embedding should be close to doc1
-    def query_embed(texts: Sequence[str]) -> List[List[float]]:
+    def query_embed(texts: Sequence[str]) -> list[list[float]]:
         """Query embedding close to doc1."""
         return [[0.1] * 100 + [0.9] * 1436 for _ in texts]
 
@@ -192,9 +192,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
     assert count == 3
 
     # Search with query embedding close to doc1
-    results = semantic_search(
-        "python web scraping", k=3, client=client, embedding_function=query_embed
-    )
+    results = semantic_search("python web scraping", k=3, client=client, embedding_function=query_embed)
 
     assert len(results) >= 1, "Should return at least one result"
 
@@ -204,7 +202,9 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
 
     # Verify scores decrease monotonically (or stay equal)
     for i in range(len(scores) - 1):
-        assert scores[i] >= scores[i + 1], f"Score at index {i} ({scores[i]}) should be >= score at index {i+1} ({scores[i+1]})"
+        assert scores[i] >= scores[i + 1], (
+            f"Score at index {i} ({scores[i]}) should be >= score at index {i + 1} ({scores[i + 1]})"
+        )
 
     # Verify doc1 has highest score (should be first or among top results)
     # Note: Exact ordering depends on Chroma's distance calculation, but scores should be ordered
@@ -275,4 +275,3 @@ def test_semantic_search_metadata_normalization(tmp_path: Path) -> None:
     # Verify top-level page_uris is also a list
     assert isinstance(results[0]["page_uris"], list)
     assert results[0]["page_uris"] == ["uri1", "uri2"]
-

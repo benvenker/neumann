@@ -1,12 +1,9 @@
 """Lightweight CLI tests with mocking (no WeasyPrint/PyMuPDF dependencies)."""
 
 import json
-import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
+from unittest.mock import Mock, patch
 
 from ids import make_doc_id, make_doc_id_from_str
 from models import FileSummary, SummaryFrontMatter
@@ -27,7 +24,7 @@ def test_doc_id_consistency():
     render_id = make_doc_id(src_path, input_root)
 
     # Summarize-style (absolute path, no input_root)
-    summarize_id = make_doc_id_from_str(str(src_path))
+    _summarize_id = make_doc_id_from_str(str(src_path))
 
     # These should match when we use input_root for summarize too
     # For this test, we verify render_id is consistent format
@@ -46,8 +43,9 @@ def test_doc_id_from_str():
 @patch("main.config")
 def test_search_command_lexical_only_no_query(mock_config, mock_hybrid_search):
     """Test search works without query when lexical filters provided."""
-    from main import cmd_search
     from argparse import Namespace
+
+    from main import cmd_search
 
     # Mock config: no OpenAI key
     mock_config.has_openai_key = False
@@ -89,9 +87,10 @@ def test_search_command_lexical_only_no_query(mock_config, mock_hybrid_search):
 @patch("main.config")
 def test_search_command_semantic_with_fake_embeddings(mock_config, mock_hybrid_search):
     """Test search with semantic query formats output correctly."""
-    from main import cmd_search, pretty_print_results
     from argparse import Namespace
     from io import StringIO
+
+    from main import cmd_search
 
     # Mock config: has OpenAI key
     mock_config.has_openai_key = True
@@ -137,8 +136,9 @@ def test_search_command_semantic_with_fake_embeddings(mock_config, mock_hybrid_s
 @patch("main.subprocess.Popen")
 def test_serve_command_starts_server(mock_popen):
     """Test serve command starts http.server with correct directory."""
-    from main import cmd_serve
     from argparse import Namespace
+
+    from main import cmd_serve
 
     # Mock process
     mock_proc = Mock()
@@ -176,7 +176,7 @@ def test_serve_command_starts_server(mock_popen):
 def test_ingest_command_end_to_end_minimal(
     mock_config,
     mock_discover,
-    mock_save_summary,
+    _mock_save_summary,
     mock_summarize,
     mock_render,
     mock_get_client,
@@ -185,9 +185,10 @@ def test_ingest_command_end_to_end_minimal(
     tmp_path,
 ):
     """Test ingest command with mocked dependencies."""
-    from main import cmd_ingest
     from argparse import Namespace
     from datetime import datetime
+
+    from main import cmd_ingest
 
     # Mock config
     mock_config.has_openai_key = True
@@ -257,9 +258,8 @@ def test_ingest_command_end_to_end_minimal(
     )
 
     # Run ingest (suppress tqdm output)
-    with patch("main.tqdm"):
-        with patch("main.tqdm.write"):
-            rc = cmd_ingest(args)
+    with patch("main.tqdm"), patch("main.tqdm.write"):
+        rc = cmd_ingest(args)
 
     assert rc == 0
     assert mock_render.called
@@ -273,8 +273,9 @@ def test_ingest_command_end_to_end_minimal(
 @patch("main.config")
 def test_search_command_no_key_no_filters_errors(mock_config, mock_hybrid_search):
     """Test search errors gracefully when no key and no filters."""
-    from main import cmd_search
     from argparse import Namespace
+
+    from main import cmd_search
 
     # Mock config: no OpenAI key
     mock_config.has_openai_key = False
@@ -294,4 +295,3 @@ def test_search_command_no_key_no_filters_errors(mock_config, mock_hybrid_search
     assert rc == 2
     # Should not have called hybrid_search
     mock_hybrid_search.assert_not_called()
-
