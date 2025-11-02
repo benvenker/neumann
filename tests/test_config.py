@@ -6,11 +6,12 @@ import pytest
 
 def reload_config_module():
     import sys
+
     sys.modules.pop("config", None)
     return importlib.import_module("config")
 
 
-def test_config_defaults(tmp_path, monkeypatch):
+def test_config_defaults(monkeypatch):
     # Ensure no env leaks
     monkeypatch.delenv("ASSET_BASE_URL", raising=False)
     monkeypatch.delenv("CHROMA_PATH", raising=False)
@@ -51,6 +52,7 @@ def test_overlap_validation(monkeypatch):
     monkeypatch.setenv("LINES_PER_CHUNK", "50")
     monkeypatch.setenv("OVERLAP", "50")  # equal is invalid
     import pytest
+
     with pytest.raises(Exception):  # noqa: B017
         reload_config_module()
 

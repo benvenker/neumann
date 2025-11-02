@@ -310,6 +310,47 @@ Example: `docs/app/auth page.tsx` → `app__auth_page.tsx`
 
 This ensures consistency across render output, summaries, and search index.
 
+## Metadata Normalization
+
+Neumann stores list-like metadata fields in ChromaDB as comma-separated strings and rehydrates them to lists on read.
+
+**Known list-like keys** (defined in `NORMALIZED_META_LIST_KEYS`):
+- `product_tags`
+- `key_topics`
+- `api_symbols`
+- `related_files`
+- `suggested_queries`
+- `page_uris`
+
+**Caveat**: If your metadata values contain commas, they may split incorrectly on hydration. This is acceptable for the POC; a robust serialization method (e.g., JSON encoding) is planned for the future (see Beads issue).
+
+**Example**:
+```python
+# Ingestion writes:
+metadata = {"page_uris": ["uri1", "uri2"]}  # stored as "uri1,uri2"
+
+# Search returns:
+result["metadata"]["page_uris"]  # ["uri1", "uri2"] (rehydrated)
+```
+
+## Language Metadata
+
+The canonical metadata key for language is **`lang`**.
+
+- **Ingestion**: All new documents store only `lang` (not `language`)
+- **Retrieval**: Search results expose `metadata.language` for backward compatibility, sourced from either `lang` or `language`
+- **Migration**: Existing documents with `language` continue to work; no data migration required
+
+This unification simplifies the codebase while maintaining API compatibility.
+
+## CLI Output Formatting
+
+The `neumann search` command pretty-prints results, including page URIs:
+
+- Handles `page_uris` as either a list or comma-separated string
+- Displays up to 3 URIs with a "+N more" indicator for additional URIs
+- Gracefully handles empty or malformed URI data
+
 ## Performance Considerations
 
 The current `ingest` pipeline reads entire files into memory for summarization and chunking. This approach is acceptable for most use cases but may increase memory usage for very large files.

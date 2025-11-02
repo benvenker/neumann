@@ -1,11 +1,9 @@
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from chunker import (CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines,
-                     load_page_uris)
+from chunker import CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines, load_page_uris
 
 
 def test_load_page_uris_missing_file():
@@ -159,7 +157,9 @@ def test_chunk_respects_16kb_limit(tmp_path: Path):
     # Verify all chunks are <= 16KB
     for chunk in chunks:
         chunk_bytes = len(chunk["text"].encode("utf-8"))
-        assert chunk_bytes <= CHROMA_CLOUD_DOC_MAX_BYTES, f"Chunk {chunk['line_start']}-{chunk['line_end']} exceeds limit"
+        assert chunk_bytes <= CHROMA_CLOUD_DOC_MAX_BYTES, (
+            f"Chunk {chunk['line_start']}-{chunk['line_end']} exceeds limit"
+        )
 
 
 def test_page_uris_attached(tmp_path: Path):
@@ -333,7 +333,7 @@ def test_chunk_dynamic_step_size_for_byte_limited_chunks(tmp_path: Path):
         current_start = chunks[i]["line_start"]
         overlap_size = 20
         expected_start = max(1, prev_end - overlap_size + 1)
-        assert current_start <= expected_start, f"Gap detected between chunks {i-1} and {i}"
+        assert current_start <= expected_start, f"Gap detected between chunks {i - 1} and {i}"
 
 
 def test_load_page_uris_with_missing_uri_field(tmp_path: Path):
@@ -376,7 +376,7 @@ def test_load_page_uris_with_empty_uri(tmp_path: Path):
 
 def test_small_file_over_16kb_chunked_fully(tmp_path: Path):
     """Test that a file with n ≤ per_chunk but total bytes > 16KB is fully chunked without data loss.
-    
+
     This addresses the bug where the special-case branch would shrink the file and
     return early with incorrect line_end metadata, dropping the remainder of the file.
     """
@@ -403,14 +403,14 @@ def test_small_file_over_16kb_chunked_fully(tmp_path: Path):
     for chunk in chunks:
         for line_num in range(chunk["line_start"], chunk["line_end"] + 1):
             covered_lines.add(line_num)
-    
+
     # All lines 1..200 should be covered
     assert covered_lines == set(range(1, 201)), "Not all lines covered - data loss detected"
 
 
 def test_multiline_with_first_line_very_long(tmp_path: Path):
     """Test that a multi-line file with the first line > 16KB splits that line properly.
-    
+
     This verifies that long single lines are handled correctly even when they appear
     in multi-line files, not just as standalone single-line files.
     """
@@ -443,4 +443,3 @@ def test_multiline_with_first_line_very_long(tmp_path: Path):
     # Verify all subsequent chunks start at line 2 or later
     for chunk in subsequent_chunks:
         assert chunk["line_start"] >= 2, f"Unexpected line_start: {chunk['line_start']}"
-
