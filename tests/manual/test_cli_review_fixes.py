@@ -36,13 +36,13 @@ logger = logging.getLogger(__name__)
 def run_command(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
     """Run a command and return (returncode, stdout, stderr)."""
     logger.info(f"Running: {' '.join(cmd)}")
-    
+
     # Use the project's Python if running with python -m main
     if cmd[0] == "python" and len(cmd) > 1 and cmd[1] == "-m":
         venv_python = project_root / ".venv" / "bin" / "python"
         if venv_python.exists():
             cmd = [str(venv_python)] + cmd[1:]
-    
+
     result = subprocess.run(
         cmd, capture_output=True, text=True, cwd=cwd or project_root
     )

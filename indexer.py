@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import math
 import re
-from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
-                    Pattern, Sequence, Tuple, TypedDict)
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from re import Pattern
+from typing import Any, TypedDict
 
 import chromadb
 from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
 
 from config import config
-
 from embeddings import embed_texts
 
 # Lexical scoring defaults (tunable)
@@ -23,7 +23,7 @@ LEX_PATH_ONLY_BASELINE: float = 0.25  # baseline when only path_like matches
 LEX_PATH_FETCH_MULTIPLIER: int = 10  # multiplier for fetch limit when path filtering
 
 # Metadata keys that are normalized from comma-separated strings to lists on read
-NORMALIZED_META_LIST_KEYS: List[str] = [
+NORMALIZED_META_LIST_KEYS: list[str] = [
     "product_tags",
     "key_topics",
     "api_symbols",
@@ -33,14 +33,14 @@ NORMALIZED_META_LIST_KEYS: List[str] = [
 ]
 
 
-def get_client(path: Optional[str] = None) -> ClientAPI:
+def get_client(path: str | None = None) -> ClientAPI:
     storage_path = path or config.CHROMA_PATH
     return chromadb.PersistentClient(path=storage_path)
 
 
 def get_collections(
-    client: Optional[ClientAPI] = None,
-) -> Tuple[Collection, Collection]:
+    client: ClientAPI | None = None,
+) -> tuple[Collection, Collection]:
     """Return (search_summaries, search_code) collections.
 
     - search_summaries: for summary markdown with embeddings
@@ -61,8 +61,8 @@ def get_collections(
 def upsert_summaries(
     items: Iterable[Mapping[str, object]],
     *,
-    client: Optional[ClientAPI] = None,
-    embedding_function: Optional[Callable[[Sequence[str]], List[List[float]]]] = None,
+    client: ClientAPI | None = None,
+    embedding_function: Callable[[Sequence[str]], list[list[float]]] | None = None,
 ) -> int:
     """Upsert summaries into search_summaries.
 
@@ -72,9 +72,9 @@ def upsert_summaries(
     """
     summaries, _ = get_collections(client)
 
-    ids: List[str] = []
-    documents: List[str] = []
-    metadatas: List[Mapping[str, object]] = []
+    ids: list[str] = []
+    documents: list[str] = []
+    metadatas: list[Mapping[str, object]] = []
     for item in items:
         ids.append(str(item["id"]))
         documents.append(str(item["document"]))
@@ -92,14 +92,14 @@ def upsert_summaries(
 def upsert_code_chunks(
     items: Iterable[Mapping[str, object]],
     *,
-    client: Optional[ClientAPI] = None,
+    client: ClientAPI | None = None,
 ) -> int:
     """Upsert code/text chunks into search_code without embeddings."""
     _, code = get_collections(client)
 
-    ids: List[str] = []
-    documents: List[str] = []
-    metadatas: List[Mapping[str, object]] = []
+    ids: list[str] = []
+    documents: list[str] = []
+    metadatas: list[Mapping[str, object]] = []
     for item in items:
         ids.append(str(item["id"]))
         documents.append(str(item["document"]))
@@ -111,12 +111,12 @@ def upsert_code_chunks(
     return len(ids)
 
 
-def _sanitize_list(xs: Optional[Sequence[str]]) -> List[str]:
+def _sanitize_list(xs: Sequence[str] | None) -> list[str]:
     """Clean and deduplicate input list: strip whitespace, remove empty strings, preserve order."""
     if not xs:
         return []
     seen: set[str] = set()
-    out: List[str] = []
+    out: list[str] = []
     for s in xs:
         if not s:
             continue
@@ -129,8 +129,8 @@ def _sanitize_list(xs: Optional[Sequence[str]]) -> List[str]:
 
 
 def _build_where_document(
-    must_terms: Optional[List[str]], regexes: Optional[List[str]]
-) -> Optional[Dict[str, Any]]:
+    must_terms: list[str] | None, regexes: list[str] | None
+) -> dict[str, Any] | None:
     """Build ChromaDB where_document filter combining must_terms and regexes.
     
     Filter semantics:
@@ -148,7 +148,7 @@ def _build_where_document(
     terms = _sanitize_list(must_terms)
     regs = _sanitize_list(regexes)
 
-    terms_group: Optional[Dict[str, Any]] = None
+    terms_group: dict[str, Any] | None = None
     if terms:
         if len(terms) == 1:
             # Single term: no need for $and wrapper
@@ -157,7 +157,7 @@ def _build_where_document(
             # Multiple terms: wrap in $and
             terms_group = {"$and": [{"$contains": t} for t in terms]}
 
-    regex_group: Optional[Dict[str, Any]] = None
+    regex_group: dict[str, Any] | None = None
     if regs:
         if len(regs) == 1:
             # Single regex: no need for $or wrapper
@@ -171,7 +171,7 @@ def _build_where_document(
     return terms_group or regex_group
 
 
-def _build_where_metadata(path_like: Optional[str]) -> Optional[Dict[str, Any]]:
+def _build_where_metadata(path_like: str | None) -> dict[str, Any] | None:
     """Build ChromaDB where filter for source_path metadata.
     
     Note: ChromaDB's metadata filters don't support $contains, so path filtering
@@ -182,9 +182,9 @@ def _build_where_metadata(path_like: Optional[str]) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _compile_regexes(regexes: List[str]) -> List[Tuple[Pattern[str], str]]:
+def _compile_regexes(regexes: list[str]) -> list[tuple[Pattern[str], str]]:
     """Safely compile regex patterns, skipping invalid ones. Returns list of (pattern, original) tuples."""
-    patterns: List[Tuple[Pattern[str], str]] = []
+    patterns: list[tuple[Pattern[str], str]] = []
     for raw in regexes:
         try:
             compiled = re.compile(raw, flags=re.IGNORECASE | re.MULTILINE)
@@ -200,8 +200,8 @@ class LexicalMetrics(TypedDict, total=False):
     term_hits: int               # uncapped total across terms
     regex_hits: int              # uncapped total across regexes
     doc_len: int
-    per_term: Dict[str, int]     # exact input term -> count
-    per_regex: Dict[str, int]    # raw regex pattern string -> count
+    per_term: dict[str, int]     # exact input term -> count
+    per_regex: dict[str, int]    # raw regex pattern string -> count
     raw: float                   # weighted sum with caps, pre-normalization
     max_raw: float               # theoretical max given caps and query shape
     length_pen: float            # multiplicative penalty applied
@@ -209,9 +209,9 @@ class LexicalMetrics(TypedDict, total=False):
 
 def _compute_lexical_score(
     doc_str: str,
-    terms: List[str],
-    compiled_patterns: List[Tuple[Pattern[str], str]],
-) -> Tuple[float, LexicalMetrics]:
+    terms: list[str],
+    compiled_patterns: list[tuple[Pattern[str], str]],
+) -> tuple[float, LexicalMetrics]:
     """Compute a 0–1 lexical score with capped match counts and mild length penalty.
     
     - Counts occurrences per term (case-insensitive, non-overlapping)
@@ -226,12 +226,12 @@ def _compute_lexical_score(
     doc_lower = doc_str.lower()
 
     # Count per-term occurrences (non-overlapping, case-insensitive)
-    term_hits_list: List[int] = [doc_lower.count(t.lower()) for t in terms] if terms else []
-    per_term: Dict[str, int] = {t: term_hits_list[i] for i, t in enumerate(terms)} if terms else {}
+    term_hits_list: list[int] = [doc_lower.count(t.lower()) for t in terms] if terms else []
+    per_term: dict[str, int] = {t: term_hits_list[i] for i, t in enumerate(terms)} if terms else {}
 
     # Count regex matches (ignore zero-length matches)
-    regex_hits_list: List[int] = []
-    per_regex: Dict[str, int] = {}
+    regex_hits_list: list[int] = []
+    per_regex: dict[str, int] = {}
     for pat, raw in compiled_patterns:
         cnt = 0
         for m in pat.finditer(doc_str):
@@ -279,7 +279,7 @@ def _compute_lexical_score(
     )
 
 
-def _parse_meta_list(value: object) -> List[str]:
+def _parse_meta_list(value: object) -> list[str]:
     """Normalize list-like metadata fields from comma-separated strings or lists to deduplicated lists.
     
     Args:
@@ -290,7 +290,7 @@ def _parse_meta_list(value: object) -> List[str]:
     """
     if isinstance(value, list):
         seen: set[str] = set()
-        out: List[str] = []
+        out: list[str] = []
         for v in value:
             s = str(v).strip()
             if s and s not in seen:
@@ -300,7 +300,7 @@ def _parse_meta_list(value: object) -> List[str]:
     if isinstance(value, str):
         parts = [p.strip() for p in value.split(",")]
         seen: set[str] = set()
-        out: List[str] = []
+        out: list[str] = []
         for s in parts:
             if s and s not in seen:
                 seen.add(s)
@@ -309,7 +309,7 @@ def _parse_meta_list(value: object) -> List[str]:
     return []
 
 
-def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> Dict[str, object]:
+def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> dict[str, object]:
     """Convert metadata values to Chroma-acceptable primitives.
     
     - list -> comma-joined string (empty list -> "")
@@ -318,7 +318,7 @@ def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> Dict[st
     """
     if not meta:
         return {}
-    out: Dict[str, object] = {}
+    out: dict[str, object] = {}
     for k, v in meta.items():
         if isinstance(v, list):
             out[k] = ",".join(str(x) for x in v) if v else ""
@@ -329,7 +329,7 @@ def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> Dict[st
     return out
 
 
-def _distance_to_score(d: Optional[float]) -> float:
+def _distance_to_score(d: float | None) -> float:
     """Convert Chroma distance to a bounded [0,1] relevance score (higher is better).
     
     Args:
@@ -343,16 +343,16 @@ def _distance_to_score(d: Optional[float]) -> float:
     return 1.0 / (1.0 + max(d, 0.0))
 
 
-def _rrf_component(rank: Optional[int], k: int = 60) -> float:
+def _rrf_component(rank: int | None, k: int = 60) -> float:
     """Compute RRF contribution for a rank. Returns 0.0 if rank is None."""
     if rank is None:
         return 0.0
     return 1.0 / (k + max(rank, 0) + 1)
 
 
-def _merge_unique_ordered(a: Optional[List[str]], b: Optional[List[str]]) -> List[str]:
+def _merge_unique_ordered(a: list[str] | None, b: list[str] | None) -> list[str]:
     """Merge two URI lists, preserving order and removing duplicates."""
-    out: List[str] = []
+    out: list[str] = []
     seen: set[str] = set()
     for src in ((a or []), (b or [])):
         for u in src:
@@ -365,13 +365,13 @@ def _merge_unique_ordered(a: Optional[List[str]], b: Optional[List[str]]) -> Lis
 
 
 def lexical_search(
-    must_terms: Optional[List[str]] = None,
-    regexes: Optional[List[str]] = None,
-    path_like: Optional[str] = None,
+    must_terms: list[str] | None = None,
+    regexes: list[str] | None = None,
+    path_like: str | None = None,
     k: int = 12,
     *,
-    client: Optional[ClientAPI] = None,
-) -> List[Dict[str, Any]]:
+    client: ClientAPI | None = None,
+) -> list[dict[str, Any]]:
     """Query search_code collection using FTS ($contains), regex ($regex), and path filtering.
 
     Args:
@@ -432,7 +432,7 @@ def lexical_search(
     )
 
     # Assemble results
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     ids = res.get("ids", [])
     documents = res.get("documents", [])
     metadatas = res.get("metadatas", [])
@@ -463,7 +463,7 @@ def lexical_search(
         lex_score, metrics = _compute_lexical_score(doc_str, terms, compiled_patterns)
 
         # Build why signals using metrics (avoid re-counting)
-        why: List[str] = []
+        why: list[str] = []
         for term, cnt in (metrics.get("per_term") or {}).items():
             if cnt > 0:
                 why.append(f"matched term: '{term}' x{cnt}")
@@ -544,9 +544,9 @@ def semantic_search(
     query: str,
     k: int = 12,
     *,
-    client: Optional[ClientAPI] = None,
-    embedding_function: Optional[Callable[[Sequence[str]], List[List[float]]]] = None,
-) -> List[Dict[str, Any]]:
+    client: ClientAPI | None = None,
+    embedding_function: Callable[[Sequence[str]], list[list[float]]] | None = None,
+) -> list[dict[str, Any]]:
     """Query search_summaries collection using semantic similarity via embeddings.
 
     Args:
@@ -603,7 +603,7 @@ def semantic_search(
     metas0 = (res.get("metadatas") or [[]])[0]
     dists0 = (res.get("distances") or [[]])[0]
 
-    out: List[Dict[str, Any]] = []
+    out: list[dict[str, Any]] = []
     for i in range(len(ids0)):
         meta = metas0[i] or {}
         doc_id = meta.get("doc_id") or ids0[i]
@@ -645,14 +645,14 @@ def hybrid_search(
     query: str,
     k: int = 12,
     *,
-    must_terms: Optional[List[str]] = None,
-    regexes: Optional[List[str]] = None,
-    path_like: Optional[str] = None,
-    client: Optional[ClientAPI] = None,
-    embedding_function: Optional[Callable[[Sequence[str]], List[List[float]]]] = None,
+    must_terms: list[str] | None = None,
+    regexes: list[str] | None = None,
+    path_like: str | None = None,
+    client: ClientAPI | None = None,
+    embedding_function: Callable[[Sequence[str]], list[list[float]]] | None = None,
     w_semantic: float = 0.6,
     w_lexical: float = 0.4,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Hybrid search combining semantic and lexical channels using weighted-sum fusion.
     
     Supports three modes:
@@ -710,10 +710,10 @@ def hybrid_search(
     )
 
     # Build rank maps (first occurrence per doc_id)
-    sem_rank_by_doc: Dict[str, int] = {}
-    lex_rank_by_doc: Dict[str, int] = {}
-    sem_by_doc: Dict[str, Dict[str, Any]] = {}
-    lex_by_doc: Dict[str, Dict[str, Any]] = {}
+    sem_rank_by_doc: dict[str, int] = {}
+    lex_rank_by_doc: dict[str, int] = {}
+    sem_by_doc: dict[str, dict[str, Any]] = {}
+    lex_by_doc: dict[str, dict[str, Any]] = {}
 
     for i, r in enumerate(sem_results):
         did = str(r.get("doc_id"))
@@ -728,7 +728,7 @@ def hybrid_search(
             lex_by_doc[did] = r
 
     # Fuse results with weighted sum + RRF tie-breaker
-    fused: List[Dict[str, Any]] = []
+    fused: list[dict[str, Any]] = []
     for did in set(sem_by_doc) | set(lex_by_doc):
         s = sem_by_doc.get(did)
         l = lex_by_doc.get(did)
@@ -758,7 +758,7 @@ def hybrid_search(
         line_end = (l or {}).get("line_end") or (s or {}).get("line_end")
 
         # Concatenate why signals
-        why: List[str] = []
+        why: list[str] = []
         if l and isinstance(l.get("why"), list):
             why.extend(l["why"])
         if s and isinstance(s.get("why"), list):

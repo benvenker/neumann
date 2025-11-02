@@ -4,8 +4,8 @@ import json
 import logging
 import random
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -59,11 +59,11 @@ class LLMStructuredSummary(BaseModel):
     """
 
     summary_md: str = Field(..., description="200-400 word markdown body")
-    product_tags: List[str] = Field(default_factory=list)
-    key_topics: List[str] = Field(default_factory=list)
-    api_symbols: List[str] = Field(default_factory=list)
-    related_files: List[str] = Field(default_factory=list)
-    suggested_queries: List[str] = Field(default_factory=list)
+    product_tags: list[str] = Field(default_factory=list)
+    key_topics: list[str] = Field(default_factory=list)
+    api_symbols: list[str] = Field(default_factory=list)
+    related_files: list[str] = Field(default_factory=list)
+    suggested_queries: list[str] = Field(default_factory=list)
 
 
 def _build_system_prompt() -> str:
@@ -182,7 +182,7 @@ def _openai_structured_summary(
             # Parse and validate
             if content_text is None:
                 raise ValueError("OpenAI returned empty content")
-            
+
             try:
                 payload = json.loads(content_text)
             except json.JSONDecodeError as e:
@@ -191,7 +191,7 @@ def _openai_structured_summary(
                     "the structured output format. Try using a model that supports json_schema response_format "
                     "or ensure the model follows the JSON instructions strictly."
                 ) from e
-            
+
             # Handle case where OpenAI wraps fields in 'metadata' key (with json_object format)
             if "metadata" in payload and isinstance(payload["metadata"], dict):
                 # Unwrap metadata fields and merge with summary_md if present at top level
@@ -205,7 +205,7 @@ def _openai_structured_summary(
                     else:
                         # Fallback: create summary_md from available content
                         payload = {**metadata, "summary_md": payload.get("summary", "Summary not provided.")}
-            
+
             return LLMStructuredSummary.model_validate(payload)
 
         except RateLimitError as e:
@@ -251,7 +251,7 @@ def summarize_file(
     source_path: str,
     text: str,
     *,
-    llm_generate_markdown: Optional[Callable[[str], str]] = None,
+    llm_generate_markdown: Callable[[str], str] | None = None,
 ) -> FileSummary:
     """Summarize a file into the FileSummary schema.
 

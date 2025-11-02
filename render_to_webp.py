@@ -25,18 +25,21 @@ import re
 import shutil
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal
 
 # PDF ➜ WebP
 import fitz  # PyMuPDF
+
 # Markdown + syntax highlight
 import markdown as md
 from PIL import Image
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import TextLexer, guess_lexer_for_filename
+
 # HTML ➜ PDF
 from weasyprint import HTML
+
 from config import config as app_config
 from ids import make_doc_id
 
@@ -137,7 +140,7 @@ def code_to_html(code_text: str, filename: str, cfg: RenderConfig, title: str) -
     except Exception:
         lexer = TextLexer()
     # Map lineno mode
-    ln: Union[bool, Literal["inline"]] = False
+    ln: bool | Literal["inline"] = False
     if cfg.linenos == "table":
         ln = True
     elif cfg.linenos == "inline":
@@ -402,7 +405,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
 
     # Always emit pages.jsonl manifest in pages directory
     # Fields: doc_id, page, uri, sha256, bytes, width, height, source_pdf, source_file
-    pages_records: List[Dict[str, Any]] = []
+    pages_records: list[dict[str, Any]] = []
     for wp in webps:
         m = re.search(r"-p(\d+)$", wp.stem)
         page_num = int(m.group(1)) if m else 1
@@ -436,7 +439,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
         tiles_dir = dest_dir / "tiles"
         tiles_dir.mkdir(exist_ok=True, parents=True)
 
-        records: List[Dict[str, Any]] = []
+        records: list[dict[str, Any]] = []
         tile_counter = 0
         for wp in webps:
             # page number like "-p001"

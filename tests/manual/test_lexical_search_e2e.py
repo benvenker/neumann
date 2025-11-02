@@ -50,24 +50,24 @@ def index_file(file_path: Path, chroma_client, output_root: Path) -> int:
     Returns the number of chunks indexed.
     """
     logger.info(f"Processing {file_path.name}...")
-    
+
     # Read file content
     text = file_path.read_text(encoding="utf-8")
-    
+
     # Find corresponding pages.jsonl (mock for now since we don't have rendered output)
     # In a real scenario, this would be at: output_root / doc_id / pages / pages.jsonl
     pages_jsonl_path = output_root / file_path.name / "pages" / "pages.jsonl"
-    
+
     # Chunk the file
     chunks = chunk_file_by_lines(text, pages_jsonl_path, per_chunk=50, overlap=5)
     logger.info(f"  Created {len(chunks)} chunks")
-    
+
     # Prepare items for upsert
     items = []
     for i, chunk in enumerate(chunks):
         doc_id = file_path.name.replace(".", "_")
         chunk_id = f"{doc_id}:chunk_{i:03d}"
-        
+
         items.append({
             "id": chunk_id,
             "document": chunk["text"],
@@ -80,17 +80,17 @@ def index_file(file_path: Path, chroma_client, output_root: Path) -> int:
                 "page_uris": ",".join(chunk["page_uris"]) if chunk["page_uris"] else "",
             }
         })
-    
+
     # Upsert chunks
     count = upsert_code_chunks(items, client=chroma_client)
     logger.info(f"  Indexed {count} chunks into ChromaDB")
-    
+
     return count
 
 
 def run_searches(chroma_client):
     """Run a series of lexical searches and display results."""
-    
+
     test_searches = [
         {
             "name": "Single term search",
@@ -123,7 +123,7 @@ def run_searches(chroma_client):
             "path_like": ".tsx",
         },
     ]
-    
+
     for search in test_searches:
         logger.info("")
         logger.info("=" * 60)
@@ -132,7 +132,7 @@ def run_searches(chroma_client):
         logger.info(f"  Regex: {search['regexes']}")
         logger.info(f"  Path: {search['path_like']}")
         logger.info("-" * 60)
-        
+
         results = lexical_search(
             must_terms=search["must_terms"],
             regexes=search["regexes"],
@@ -140,7 +140,7 @@ def run_searches(chroma_client):
             k=5,
             client=chroma_client
         )
-        
+
         if not results:
             logger.info("  No results found")
         else:
@@ -159,33 +159,33 @@ def main() -> int:
     """Run the end-to-end test."""
     project_root = Path(__file__).parent.parent.parent
     test_data_dir = project_root / "test_data"
-    
+
     if not test_data_dir.exists():
         logger.error(f"Test data directory not found: {test_data_dir}")
         return 1
-    
+
     logger.info("🧪 Testing Lexical Search End-to-End (nm-23)")
     logger.info("=" * 60)
-    
+
     # Initialize ChromaDB client with temporary storage
     from tempfile import mkdtemp
-    
+
     chroma_path = mkdtemp(prefix="neumann_test_")
     logger.info(f"Using ChromaDB at: {chroma_path}")
     chroma_client = get_client(chroma_path)
-    
+
     # Find and index files
     logger.info(f"\n📁 Scanning {test_data_dir} for files...")
     files = find_text_files(test_data_dir)
-    
+
     if not files:
         logger.error(f"No text files found in {test_data_dir}")
         return 1
-    
+
     # Limit to first 5 files for testing
     files = files[:5]
     logger.info(f"Found {len(files)} files to index")
-    
+
     total_chunks = 0
     for file_path in files:
         try:
@@ -194,9 +194,9 @@ def main() -> int:
         except Exception as e:
             logger.error(f"Failed to index {file_path}: {e}", exc_info=True)
             return 1
-    
+
     logger.info(f"\n✓ Indexed {total_chunks} total chunks")
-    
+
     # Run searches
     logger.info("\n🔍 Running search queries...")
     try:
@@ -204,11 +204,11 @@ def main() -> int:
     except Exception as e:
         logger.error(f"Search failed: {e}", exc_info=True)
         return 1
-    
+
     logger.info("=" * 60)
     logger.info("✅ End-to-end test completed successfully")
     logger.info(f"📁 ChromaDB data: {chroma_path}")
-    
+
     return 0
 
 

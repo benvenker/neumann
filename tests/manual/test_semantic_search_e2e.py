@@ -285,7 +285,7 @@ def main():
     # Check test_output_summaries first (has real summaries), fallback to output_summaries
     test_summaries_dir = project_root / "test_output_summaries"
     output_summaries_dir = project_root / "output_summaries"
-    
+
     if test_summaries_dir.exists() and any(test_summaries_dir.glob("*.summary.md")):
         summaries_dir = test_summaries_dir
         logger.info("Using test_output_summaries (has real summaries)")
@@ -293,7 +293,7 @@ def main():
         summaries_dir = output_summaries_dir
     else:
         summaries_dir = test_summaries_dir  # Will fail with clear error
-    
+
     chroma_path = project_root / "chroma_data"
 
     if not summaries_dir.exists():

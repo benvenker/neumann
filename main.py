@@ -14,7 +14,7 @@ import subprocess
 import sys
 from datetime import timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from tqdm import tqdm
 
@@ -23,7 +23,7 @@ from config import config
 from embeddings import embed_texts
 from ids import make_doc_id
 from indexer import get_client, hybrid_search, upsert_code_chunks, upsert_summaries
-from models import FileSummary, SummaryFrontMatter
+from models import FileSummary
 from render_to_webp import RenderConfig, discover_sources, render_file
 from summarize import (
     detect_language_from_extension,
@@ -50,8 +50,8 @@ def compute_doc_id(src: Path, input_root: Path) -> str:
 
 
 def build_summary_upsert_item(
-    fs: FileSummary, doc_id: str, page_uris: List[str]
-) -> Dict[str, Any]:
+    fs: FileSummary, doc_id: str, page_uris: list[str]
+) -> dict[str, Any]:
     """Build a summary upsert item for ChromaDB.
 
     Args:
@@ -96,7 +96,7 @@ def build_summary_upsert_item(
 
 def build_chunk_upsert_items(
     raw_text: str, src_path: Path, doc_id: str, pages_jsonl: Path
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Build code chunk upsert items from raw text.
 
     Args:
@@ -116,7 +116,7 @@ def build_chunk_upsert_items(
     )
     lang = detect_language_from_extension(str(src_path))
 
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for ch in chunks:
         cid = f"{doc_id}#L{ch['line_start']}-{ch['line_end']}"
         meta = {
@@ -132,7 +132,7 @@ def build_chunk_upsert_items(
     return items
 
 
-def pretty_print_results(results: List[Dict[str, Any]]) -> None:
+def pretty_print_results(results: list[dict[str, Any]]) -> None:
     """Pretty-print search results to stdout.
 
     Args:

@@ -144,6 +144,73 @@ neumann-render --input-dir ./docs --out-dir ./out --emit both --manifest jsonl
 neumann-render --input-dir ./docs --out-dir ./output --asset-root output
 ```
 
+### FastAPI Service (Preview)
+
+A new FastAPI scaffold is available under the `api/` package. This provides a foundation for HTTP API endpoints that will expose search and document capabilities to UI clients.
+
+**Starting the API server**:
+
+```bash
+# Run with uvicorn (development mode)
+uvicorn api.app:app --reload --port 8001
+
+# Or use the factory function
+uvicorn api.app:create_app --factory --reload --port 8001
+```
+
+**Configuration**:
+
+The API uses two additional environment variables:
+
+- **`OUTPUT_DIR`** (default: `./out`): Filesystem path for rendered output (pages/tiles). This is where the API will look for document assets and manifests.
+  
+- **`API_CORS_ORIGINS`**: Allowed CORS origins for the API. Accepts comma-separated string or JSON array format:
+  ```bash
+  # Comma-separated
+  export API_CORS_ORIGINS="http://localhost:3000,http://127.0.0.1:5173"
+  
+  # JSON array
+  export API_CORS_ORIGINS='["http://localhost:3000","http://127.0.0.1:5173"]'
+  ```
+  
+  If not set, CORS middleware is disabled (secure-by-default for local usage).
+
+**Endpoints**:
+
+Currently available:
+- `/healthz` - Health check endpoint
+- `/docs` - Interactive API documentation (OpenAPI/Swagger)
+- `/openapi.json` - OpenAPI schema
+
+**Upcoming endpoints** (tracked in Beads):
+- **nm-3573.2**: `/api/v1/search` - Hybrid, lexical, and semantic search endpoints
+- **nm-3573.3**: `/api/v1/docs` - Document pages and chunks endpoints  
+- **nm-3573.4**: `/api/v1/config` - Configuration and service info
+
+**Running alongside static assets**:
+
+The API server and static asset server can run side-by-side in separate tmux sessions:
+
+```bash
+# Terminal 1: Start asset server
+tmux new -s neumann-assets
+neumann serve ./out --port 8000
+# Detach: Ctrl+b, then d
+
+# Terminal 2: Start API server
+tmux new -s neumann-api
+uvicorn api.app:app --reload --port 8001
+# Detach: Ctrl+b, then d
+
+# List sessions
+tmux ls
+
+# Attach to a session
+tmux attach -t neumann-api
+```
+
+This preview scaffold introduces the FastAPI foundation without changing existing CLI behavior. Full endpoint implementation is tracked via the nm-3573 epic in Beads.
+
 ### URI Configuration and Asset Serving
 
 URIs in `pages.jsonl` are constructed as:
@@ -172,6 +239,8 @@ Key environment variables (set in `.env` or export):
 - `OPENAI_API_KEY`: Required for summarization and semantic search
 - `ASSET_BASE_URL`: Base URL for asset URIs (default: `http://127.0.0.1:8000`)
 - `CHROMA_PATH`: Path to ChromaDB storage (default: `./chroma_data`)
+- `OUTPUT_DIR`: Filesystem path for rendered output (default: `./out`)
+- `API_CORS_ORIGINS`: Allowed CORS origins for FastAPI (comma-separated or JSON array)
 
 ### Renderer Options (neumann-render)
 

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any
 
 import pytest
 
@@ -30,13 +31,12 @@ from main import build_chunk_upsert_items, build_summary_upsert_item
 from render_to_webp import RenderConfig, discover_sources, render_file
 from summarize import summarize_file
 
-
 # ============================================================================
 # Deterministic Helper Functions
 # ============================================================================
 
 
-def nm27_embed(texts: Sequence[str]) -> List[List[float]]:
+def nm27_embed(texts: Sequence[str]) -> list[list[float]]:
     """Deterministic embedding function for testing.
 
     Returns prototype vectors based on keyword detection:
@@ -96,7 +96,7 @@ def nm27_corpus_path() -> Path:
 
 
 @pytest.fixture
-def nm27_ingested(tmp_path: Path, nm27_corpus_path: Path) -> Dict[str, Any]:
+def nm27_ingested(tmp_path: Path, nm27_corpus_path: Path) -> dict[str, Any]:
     """Ingest the nm27 corpus and return paths and doc_id mapping.
 
     Returns a dict with:
@@ -178,7 +178,7 @@ def nm27_ingested(tmp_path: Path, nm27_corpus_path: Path) -> Dict[str, Any]:
 
 
 @pytest.mark.integration
-def test_nm27_full_pipeline_ingest_and_manifests(nm27_ingested: Dict[str, Any]) -> None:
+def test_nm27_full_pipeline_ingest_and_manifests(nm27_ingested: dict[str, Any]) -> None:
     """Validate render + summarize + chunk + index structure and pages.jsonl schema/URIs."""
     out_dir = nm27_ingested["out_dir"]
     doc_ids = nm27_ingested["doc_ids"]
@@ -215,7 +215,7 @@ def test_nm27_full_pipeline_ingest_and_manifests(nm27_ingested: Dict[str, Any]) 
 
 
 @pytest.mark.integration
-def test_nm27_lexical_search_integration(nm27_ingested: Dict[str, Any]) -> None:
+def test_nm27_lexical_search_integration(nm27_ingested: dict[str, Any]) -> None:
     """Validate lexical filters (must_terms, regexes, path_like), why signals, and ordering."""
     client = nm27_ingested["client"]
 
@@ -250,7 +250,7 @@ def test_nm27_lexical_search_integration(nm27_ingested: Dict[str, Any]) -> None:
 
 
 @pytest.mark.integration
-def test_nm27_semantic_search_integration(nm27_ingested: Dict[str, Any]) -> None:
+def test_nm27_semantic_search_integration(nm27_ingested: dict[str, Any]) -> None:
     """Validate semantic search with deterministic embeddings for auth and vector queries."""
     client = nm27_ingested["client"]
 
@@ -296,7 +296,7 @@ def test_nm27_semantic_search_integration(nm27_ingested: Dict[str, Any]) -> None
 
 
 @pytest.mark.integration
-def test_nm27_hybrid_search_integration(nm27_ingested: Dict[str, Any]) -> None:
+def test_nm27_hybrid_search_integration(nm27_ingested: dict[str, Any]) -> None:
     """Validate fusion, weighted scoring, page_uris union, and combined why signals."""
     client = nm27_ingested["client"]
 
@@ -349,7 +349,7 @@ def test_nm27_hybrid_search_integration(nm27_ingested: Dict[str, Any]) -> None:
 
 
 @pytest.mark.integration
-def test_nm27_path_only_baseline_hybrid(nm27_ingested: Dict[str, Any]) -> None:
+def test_nm27_path_only_baseline_hybrid(nm27_ingested: dict[str, Any]) -> None:
     """Validate path-only baseline contribution to hybrid fusion."""
     client = nm27_ingested["client"]
 

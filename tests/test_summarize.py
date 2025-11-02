@@ -47,6 +47,7 @@ def test_summarize_raises_on_short_body() -> None:
         return make_body(120)
 
     import pytest
+
     from models import ValidationError
 
     with pytest.raises(ValidationError):

@@ -1,14 +1,11 @@
 import hashlib
 from pathlib import Path
 
-import pytest
-
 from indexer import (
     LEX_PATH_ONLY_BASELINE,
     get_client,
     hybrid_search,
     lexical_search,
-    semantic_search,
     upsert_code_chunks,
     upsert_summaries,
 )

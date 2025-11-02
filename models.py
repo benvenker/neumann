@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -11,12 +10,12 @@ class SummaryFrontMatter(BaseModel):
     doc_id: str = Field(..., description="Stable identifier derived from source_path")
     source_path: str = Field(..., description="Path to the original file")
     language: str = Field(..., description="Programming or natural language, e.g., 'python', 'markdown'")
-    product_tags: List[str] = Field(default_factory=list, description="Product or domain tags")
+    product_tags: list[str] = Field(default_factory=list, description="Product or domain tags")
     last_updated: datetime = Field(default_factory=datetime.utcnow, description="UTC timestamp of summary generation")
-    key_topics: List[str] = Field(default_factory=list, description="High-level topics covered")
-    api_symbols: List[str] = Field(default_factory=list, description="Referenced public API symbols")
-    related_files: List[str] = Field(default_factory=list, description="Paths to related files")
-    suggested_queries: List[str] = Field(default_factory=list, description="Suggested search queries")
+    key_topics: list[str] = Field(default_factory=list, description="High-level topics covered")
+    api_symbols: list[str] = Field(default_factory=list, description="Referenced public API symbols")
+    related_files: list[str] = Field(default_factory=list, description="Paths to related files")
+    suggested_queries: list[str] = Field(default_factory=list, description="Suggested search queries")
 
 
 class FileSummary(BaseModel):

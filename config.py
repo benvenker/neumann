@@ -25,6 +25,17 @@ class Config(BaseSettings):
         description="Filesystem path for ChromaDB persistent storage.",
     )
 
+    OUTPUT_DIR: str = Field(
+        default="./out",
+        description="Filesystem path for rendered output (pages/tiles).",
+    )
+
+    # API configuration
+    API_CORS_ORIGINS: list[str] = Field(
+        default_factory=list,
+        description="Allowed CORS origins for FastAPI (comma-separated env or JSON list).",
+    )
+
     # OpenAI
     OPENAI_API_KEY: str | None = Field(
         default=None,
@@ -58,10 +69,47 @@ class Config(BaseSettings):
             raise ValueError("OVERLAP must be less than LINES_PER_CHUNK")
         return v
 
+    @field_validator("API_CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):  # type: ignore[no-redef]
+        """
+        Accept list[str], JSON array string, or comma-separated string.
+
+        Examples:
+            - None or "" → []
+            - ["http://localhost:3000"] → ["http://localhost:3000"]
+            - '["http://localhost:3000"]' → ["http://localhost:3000"]
+            - "http://localhost:3000,http://127.0.0.1:5173" → ["http://localhost:3000", "http://127.0.0.1:5173"]
+        """
+        if v is None or v == "":
+            return []
+        if isinstance(v, list):
+            return [str(s).strip() for s in v if str(s).strip()]
+        if isinstance(v, str):
+            s = v.strip()
+            # Try JSON parsing first if it looks like a JSON array
+            if s.startswith("["):
+                import json
+
+                try:
+                    arr = json.loads(s)
+                    return [str(x).strip() for x in arr if str(x).strip()]
+                except Exception:
+                    # Fall back to comma-separated parsing
+                    pass
+            # Comma-separated parsing
+            return [p.strip() for p in s.split(",") if p.strip()]
+        # Fallback: coerce single value to list
+        return [str(v).strip()]
+
     # Convenience helpers
     @property
     def chroma_path(self) -> Path:
         return Path(self.CHROMA_PATH)
+
+    @property
+    def output_path(self) -> Path:
+        return Path(self.OUTPUT_DIR)
 
     @property
     def has_openai_key(self) -> bool:

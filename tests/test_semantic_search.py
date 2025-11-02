@@ -1,14 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Sequence
-
-import pytest
 
 from indexer import get_client, semantic_search, upsert_summaries
 
 
-def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], List[List[float]]]:
+def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], list[list[float]]]:
     """Create a deterministic fake embedding function for testing.
     
     Args:
@@ -17,7 +15,7 @@ def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], 
     Returns:
         Callable that returns deterministic embeddings based on text hash
     """
-    def embed(texts: Sequence[str]) -> List[List[float]]:
+    def embed(texts: Sequence[str]) -> list[list[float]]:
         embeddings = []
         for text in texts:
             # Generate deterministic embedding based on text hash
@@ -142,7 +140,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
 
     # Create embeddings where query embedding is closest to doc1, then doc2, then doc3
     # We'll use a simple distance-based approach
-    def controlled_embed(texts: Sequence[str]) -> List[List[float]]:
+    def controlled_embed(texts: Sequence[str]) -> list[list[float]]:
         """Create embeddings where first text is closest to query embedding."""
         embeddings = []
         for text in texts:
@@ -163,7 +161,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
         return embeddings
 
     # Query embedding should be close to doc1
-    def query_embed(texts: Sequence[str]) -> List[List[float]]:
+    def query_embed(texts: Sequence[str]) -> list[list[float]]:
         """Query embedding close to doc1."""
         return [[0.1] * 100 + [0.9] * 1436 for _ in texts]
 

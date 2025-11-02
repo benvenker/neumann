@@ -1,11 +1,9 @@
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from chunker import (CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines,
-                     load_page_uris)
+from chunker import CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines, load_page_uris
 
 
 def test_load_page_uris_missing_file():
@@ -403,7 +401,7 @@ def test_small_file_over_16kb_chunked_fully(tmp_path: Path):
     for chunk in chunks:
         for line_num in range(chunk["line_start"], chunk["line_end"] + 1):
             covered_lines.add(line_num)
-    
+
     # All lines 1..200 should be covered
     assert covered_lines == set(range(1, 201)), "Not all lines covered - data loss detected"
 

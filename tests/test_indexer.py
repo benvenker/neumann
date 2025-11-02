@@ -1,7 +1,6 @@
+from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Sequence
 
-from config import config
 from indexer import get_client, get_collections, upsert_code_chunks, upsert_summaries
 
 
@@ -22,7 +21,7 @@ def test_collections_created(tmp_path: Path) -> None:
 def test_upsert_summaries_with_mock_embeddings(tmp_path: Path) -> None:
     client = get_client(str(tmp_path / "chroma"))
 
-    def fake_embed(texts: Sequence[str]) -> List[List[float]]:
+    def fake_embed(texts: Sequence[str]) -> list[list[float]]:
         return [[float(i % 3) for i in range(8)] for _ in texts]
 
     count = upsert_summaries(

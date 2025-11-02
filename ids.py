@@ -6,10 +6,9 @@ by replacing them with underscores.
 """
 
 from pathlib import Path
-from typing import Optional
 
 
-def make_doc_id(path: Path, input_root: Optional[Path] = None) -> str:
+def make_doc_id(path: Path, input_root: Path | None = None) -> str:
     """Generate canonical doc_id from file path.
 
     Computes a stable, URL-friendly identifier by:
