@@ -16,7 +16,6 @@ Examples:
 """
 
 import argparse
-import hashlib
 import html
 import json
 import os
@@ -42,6 +41,7 @@ from weasyprint import HTML
 
 from config import config as app_config
 from ids import make_doc_id
+from utils.hash_utils import sha256_file
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {
@@ -361,14 +361,6 @@ def tile_bands(
                 break
             y += step
     return tiles
-
-
-def sha256_file(path: pathlib.Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def sanitize_title(path: pathlib.Path) -> str:

@@ -19,7 +19,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from summarize import save_summary_md, summarize_file
+from summarize import save_summary_md, summarize_file  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -164,7 +164,9 @@ if __name__ == "__main__":
     from config import config
 
     if not config.has_openai_key:
-        logger.warning("⚠️  OPENAI_API_KEY not set - will fail when calling OpenAI")
+        logger.warning("⚠️  OPENAI_API_KEY not set - summarization calls will fail")
+        logger.warning("  Add OPENAI_API_KEY to .env (or prefix this command) before rerunning.")
+        logger.warning("  Remember to recreate tmux sessions after editing .env so the key is visible.")
     else:
         logger.info("✓ OPENAI_API_KEY configured")
 
@@ -177,4 +179,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

@@ -25,8 +25,8 @@ from tempfile import mkdtemp
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from chunker import chunk_file_by_lines
-from indexer import get_client, lexical_search, upsert_code_chunks
+from chunker import chunk_file_by_lines  # noqa: E402
+from indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
 
 # Module-level logger (will be configured in main)
 logger = logging.getLogger(__name__)
@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 def setup_logging(output_file: Path | None = None) -> logging.Logger:
     """Setup logging to both console and file.
-    
+
     Args:
         output_file: Optional path to log file. If None, uses default in test_output/.
-    
+
     Returns:
         Configured logger instance.
     """
@@ -421,4 +421,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"💥 Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

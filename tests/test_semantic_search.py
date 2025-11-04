@@ -8,10 +8,10 @@ from indexer import get_client, semantic_search, upsert_summaries
 
 def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], list[list[float]]]:
     """Create a deterministic fake embedding function for testing.
-    
+
     Args:
         dimension: Embedding dimension (default 1536 to match OpenAI text-embedding-3-small)
-    
+
     Returns:
         Callable that returns deterministic embeddings based on text hash
     """
@@ -273,4 +273,3 @@ def test_semantic_search_metadata_normalization(tmp_path: Path) -> None:
     # Verify top-level page_uris is also a list
     assert isinstance(results[0]["page_uris"], list)
     assert results[0]["page_uris"] == ["uri1", "uri2"]
-

@@ -9,9 +9,11 @@ Commands:
 """
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
+import time
 from datetime import timezone
 from pathlib import Path
 from typing import Any
@@ -22,14 +24,10 @@ from chunker import chunk_file_by_lines, load_page_uris
 from config import config
 from embeddings import embed_texts
 from ids import make_doc_id
-from indexer import get_client, hybrid_search, upsert_code_chunks, upsert_summaries
+from indexer import get_client, get_collections, hybrid_search, upsert_code_chunks, upsert_summaries
 from models import FileSummary
 from render_to_webp import RenderConfig, discover_sources, render_file
-from summarize import (
-    detect_language_from_extension,
-    save_summary_md,
-    summarize_file,
-)
+from summarize import detect_language_from_extension, save_summary_md, summarize_file
 
 # Constants for output formatting
 MAX_WHY_LINES = 3
@@ -49,9 +47,7 @@ def compute_doc_id(src: Path, input_root: Path) -> str:
     return make_doc_id(src, input_root)
 
 
-def build_summary_upsert_item(
-    fs: FileSummary, doc_id: str, page_uris: list[str]
-) -> dict[str, Any]:
+def build_summary_upsert_item(fs: FileSummary, doc_id: str, page_uris: list[str]) -> dict[str, Any]:
     """Build a summary upsert item for ChromaDB.
 
     Args:
@@ -94,9 +90,7 @@ def build_summary_upsert_item(
     }
 
 
-def build_chunk_upsert_items(
-    raw_text: str, src_path: Path, doc_id: str, pages_jsonl: Path
-) -> list[dict[str, Any]]:
+def build_chunk_upsert_items(raw_text: str, src_path: Path, doc_id: str, pages_jsonl: Path) -> list[dict[str, Any]]:
     """Build code chunk upsert items from raw text.
 
     Args:
@@ -152,10 +146,9 @@ def pretty_print_results(results: list[dict[str, Any]]) -> None:
         uris = r.get("page_uris") or []
         if isinstance(uris, str):
             s = uris.strip()
-            if s:
-                uris = [u.strip() for u in s.split(",")] if "," in s else [s]
-            else:
-                uris = []
+            uris = (
+                [u.strip() for u in s.split(",")] if "," in s else [s]
+            ) if s else []
         if uris:
             shown = uris[:MAX_PAGE_URIS]
             more = len(uris) - len(shown)
@@ -214,8 +207,13 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
     # Initialize client if indexing
     client = None
+    db_path_used = None
     if not args.no_index:
-        client = get_client()
+        # Use --db-path if provided, otherwise use config default
+        db_path_arg = getattr(args, "db_path", None)
+        db_path_used = str(Path(db_path_arg).resolve()) if db_path_arg else config.CHROMA_PATH
+        print(f"Using ChromaDB at: {db_path_used}")
+        client = get_client(path=db_path_used if db_path_arg else None)
 
     # Statistics
     rendered = 0
@@ -225,15 +223,29 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     indexed_chunks = 0
     errors = 0
 
+    total_sources = len(sources)
+
+    def _rel_path(path: Path, root: Path) -> str:
+        try:
+            return str(path.relative_to(root))
+        except ValueError:
+            return str(path)
+
     # Process each file with progress bar
-    with tqdm(total=len(sources), desc="Ingesting") as pbar:
-        for src in sources:
+    with tqdm(total=total_sources, desc="Ingesting") as pbar:
+        for idx, src in enumerate(sources, start=1):
+            file_start = time.perf_counter()
+            rel_src = _rel_path(src, input_dir)
+            tqdm.write(f"\n[{idx}/{total_sources}] {rel_src}")
             try:
                 doc_id = compute_doc_id(src, input_dir)
 
                 # 1. Render
+                stage_start = time.perf_counter()
                 render_file(src, out_dir, render_cfg)
                 rendered += 1
+                render_dur = time.perf_counter() - stage_start
+                tqdm.write(f"  render: {render_dur:.2f}s -> {doc_id}/pages")
 
                 # 2. Load raw text and page URIs
                 raw_text = src.read_text(encoding="utf-8", errors="ignore")
@@ -243,6 +255,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 # 3. Summarize (if enabled and OpenAI key available)
                 summary_item = None
                 if not args.no_summary and config.has_openai_key:
+                    stage_start = time.perf_counter()
                     try:
                         fs = summarize_file(str(src), raw_text)
                         # Override doc_id to ensure consistency with renderer
@@ -251,33 +264,53 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                         save_summary_md(summary_path, fs)
                         summary_item = build_summary_upsert_item(fs, doc_id, page_uris)
                         summarized += 1
+                        words = len(fs.summary_md.split())
+                        summary_dur = time.perf_counter() - stage_start
+                        tqdm.write(
+                            f"  summary: {words} words in {summary_dur:.2f}s -> {summary_path}"
+                        )
                     except Exception as e:
                         tqdm.write(f"[warn] Failed to summarize {src}: {e}")
+                elif args.no_summary:
+                    tqdm.write("  summary: skipped (--no-summary)")
+                elif not config.has_openai_key:
+                    tqdm.write("  summary: skipped (OPENAI_API_KEY not configured)")
 
                 # 4. Chunk
+                stage_start = time.perf_counter()
                 chunk_items = build_chunk_upsert_items(raw_text, src, doc_id, pages_jsonl)
                 chunked += len(chunk_items)
+                chunk_dur = time.perf_counter() - stage_start
+                tqdm.write(f"  chunk: {len(chunk_items)} chunks in {chunk_dur:.2f}s")
 
                 # 5. Index (if enabled)
                 if client and not args.no_index:
+                    stage_start = time.perf_counter()
                     try:
                         if summary_item and config.has_openai_key:
-                            upsert_summaries(
-                                [summary_item], client=client, embedding_function=embed_texts
-                            )
+                            upsert_summaries([summary_item], client=client, embedding_function=embed_texts)
                             indexed_summaries += 1
 
                         if chunk_items:
                             upsert_code_chunks(chunk_items, client=client)
                             indexed_chunks += len(chunk_items)
+                        index_dur = time.perf_counter() - stage_start
+                        summary_desc = "summary + " if summary_item and config.has_openai_key else ""
+                        tqdm.write(
+                            f"  index: {summary_desc}{len(chunk_items)} chunks in {index_dur:.2f}s"
+                        )
                     except Exception as e:
                         tqdm.write(f"[warn] Failed to index {src}: {e}")
+                elif args.no_index:
+                    tqdm.write("  index: skipped (--no-index)")
 
             except Exception as e:
                 tqdm.write(f"[error] {src}: {e}")
                 errors += 1
             finally:
                 pbar.update(1)
+                total_dur = time.perf_counter() - file_start
+                tqdm.write(f"  total: {total_dur:.2f}s")
 
     # Print summary
     print("\nIngest complete:")
@@ -287,6 +320,18 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     if not args.no_index:
         print(f"  Indexed summaries: {indexed_summaries}")
         print(f"  Indexed chunks: {indexed_chunks}")
+
+        # Verify collection counts in ChromaDB
+        if client:
+            try:
+                summaries_coll, code_coll = get_collections(client)
+                summary_count = summaries_coll.count()
+                code_count = code_coll.count()
+                print("\nChromaDB collection counts:")
+                print(f"  search_summaries: {summary_count} documents")
+                print(f"  search_code: {code_count} chunks")
+            except Exception as e:
+                print(f"  Warning: Could not verify collection counts: {e}", file=sys.stderr)
     if errors > 0:
         print(f"  Errors: {errors}")
 
@@ -297,13 +342,21 @@ def cmd_search(args: argparse.Namespace) -> int:
     """Search command: Run hybrid search and format results.
 
     Args:
-        args: Parsed arguments with query, k, must, regex, path_like, json
+        args: Parsed arguments with query, k, must, regex, path_like, json, db_path
 
     Returns:
         Exit code (0 on success, non-zero on failure)
     """
     query = (args.query or "").strip()
     run_semantic = config.has_openai_key and bool(query)
+
+    # Use --db-path if provided, otherwise use config default
+    db_path_arg = getattr(args, "db_path", None)
+    db_path_used = str(Path(db_path_arg).resolve()) if db_path_arg else config.CHROMA_PATH
+    print(f"Using ChromaDB at: {db_path_used}")
+
+    # Create client with explicit path
+    client = get_client(path=db_path_used if db_path_arg else None)
 
     try:
         if run_semantic:
@@ -314,6 +367,7 @@ def cmd_search(args: argparse.Namespace) -> int:
                 must_terms=args.must or None,
                 regexes=args.regex or None,
                 path_like=args.path_like,
+                client=client,
                 embedding_function=embed_texts,
             )
         else:
@@ -333,6 +387,7 @@ def cmd_search(args: argparse.Namespace) -> int:
                 must_terms=args.must or None,
                 regexes=args.regex or None,
                 path_like=args.path_like,
+                client=client,
             )
     except Exception as e:
         print(f"Search failed: {e}", file=sys.stderr)
@@ -397,10 +452,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
         except KeyboardInterrupt:
             print("\nShutting down server...")
             proc.terminate()
-            try:
+            with contextlib.suppress(KeyboardInterrupt):
                 proc.wait()
-            except KeyboardInterrupt:
-                pass  # Ignore repeated signal during shutdown
     except OSError as e:
         print(f"Failed to start server: {e}", file=sys.stderr)
         return 1
@@ -421,9 +474,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # ingest subcommand
-    ingest_parser = subparsers.add_parser(
-        "ingest", help="Render → summarize → chunk → index"
-    )
+    ingest_parser = subparsers.add_parser("ingest", help="Render → summarize → chunk → index")
     ingest_parser.add_argument(
         "--input-dir",
         type=Path,
@@ -452,10 +503,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Root path segment embedded in pages.jsonl URIs (defaults to out_dir.name).",
     )
+    ingest_parser.add_argument(
+        "--db-path",
+        type=Path,
+        default=None,
+        help="ChromaDB storage path (overrides CHROMA_PATH from config). Will be resolved to absolute.",
+    )
     ingest_parser.epilog = (
         "Examples:\n"
         "  neumann ingest --input-dir ./docs --out-dir ./out\n"
         "  neumann ingest --input-dir ./docs --out-dir ./out --no-summary\n"
+        "  neumann ingest --input-dir ./docs --out-dir ./out --db-path /abs/path/to/chroma_data\n"
     )
 
     # search subcommand
@@ -467,9 +525,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="Natural language query (optional; use lexical filters for lexical-only search)",
     )
-    search_parser.add_argument(
-        "--k", type=int, default=12, help="Number of results to return (default: 12)"
-    )
+    search_parser.add_argument("--k", type=int, default=12, help="Number of results to return (default: 12)")
     search_parser.add_argument(
         "--must",
         action="append",
@@ -486,19 +542,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Substring to match in source path",
     )
+    search_parser.add_argument("--json", action="store_true", help="Output raw JSON")
     search_parser.add_argument(
-        "--json", action="store_true", help="Output raw JSON"
+        "--db-path",
+        type=Path,
+        default=None,
+        help="ChromaDB storage path (overrides CHROMA_PATH from config). Will be resolved to absolute.",
     )
     search_parser.epilog = (
         "Examples:\n"
         "  neumann search 'vector store' --k 5\n"
         "  neumann search '' --must chroma --path-like indexer.py\n"
+        "  neumann search 'embeddings' --db-path /abs/path/to/chroma_data\n"
     )
 
     # serve subcommand
-    serve_parser = subparsers.add_parser(
-        "serve", help="Start http.server to serve output"
-    )
+    serve_parser = subparsers.add_parser("serve", help="Start http.server to serve output")
     serve_parser.add_argument(
         "out_dir",
         type=Path,
@@ -545,4 +604,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -86,7 +86,7 @@ neumann/
 ## Technology Stack
 
 ### Core Dependencies
-- **WeasyPrint** (62.3): HTML → PDF rendering with Cairo backend
+- **WeasyPrint** (66.0): HTML → PDF rendering with Cairo backend
 - **PyMuPDF** (1.24.8): PDF → image rasterization
 - **Pillow** (10.4.0): Image manipulation and WebP encoding
 - **Pygments** (2.18.0): Syntax highlighting for code files

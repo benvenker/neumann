@@ -44,7 +44,7 @@ def test_pages_jsonl_emitted_with_required_fields():
         assert row["uri"].startswith("http://") or row["uri"].startswith("https://")
 
 
-def test_uri_generation_format_matches_base_url(monkeypatch):
+def test_uri_generation_format_matches_base_url():
     import re
 
     from config import config
@@ -71,7 +71,8 @@ def test_dimensions_and_bytes_match_actual_files():
     with tempfile.TemporaryDirectory() as tmpdir:
         input_dir = pathlib.Path(tmpdir) / "input"
         output_dir = pathlib.Path(tmpdir) / "output"
-        input_dir.mkdir(); output_dir.mkdir()
+        input_dir.mkdir()
+        output_dir.mkdir()
 
         test_file = input_dir / "dims.md"
         test_file.write_text("# A\nB", encoding="utf-8")
@@ -82,11 +83,9 @@ def test_dimensions_and_bytes_match_actual_files():
         pages_dir = output_dir / "dims.md" / "pages"
         row = read_jsonl(pages_dir / "pages.jsonl")[0]
         wp = pages_dir / next(iter(p for p in (pages_dir.glob("*.webp"))))
-        with wp.open("rb") as f:
-            on_disk = wp.stat().st_size
+        on_disk = wp.stat().st_size
         assert row["bytes"] == on_disk
         from PIL import Image
         with Image.open(wp) as im:
             w, h = im.size
         assert row["width"] == w and row["height"] == h
-

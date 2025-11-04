@@ -23,13 +23,9 @@ def test_doc_id_consistency():
     # Render-style (relative to input_dir)
     render_id = make_doc_id(src_path, input_root)
 
-    # Summarize-style (absolute path, no input_root)
-    summarize_id = make_doc_id_from_str(str(src_path))
-
-    # These should match when we use input_root for summarize too
-    # For this test, we verify render_id is consistent format
-    assert "__" in render_id
-    assert " " not in render_id
+    # Summarize path normally runs relative to the input root. Ensure helper matches that form.
+    summarize_id = make_doc_id_from_str(str(src_path.relative_to(input_root)))
+    assert summarize_id == render_id
 
 
 def test_doc_id_from_str():
@@ -176,7 +172,7 @@ def test_serve_command_starts_server(mock_popen):
 def test_ingest_command_end_to_end_minimal(
     mock_config,
     mock_discover,
-    mock_save_summary,
+    _mock_save_summary,
     mock_summarize,
     mock_render,
     mock_get_client,
@@ -295,4 +291,3 @@ def test_search_command_no_key_no_filters_errors(mock_config, mock_hybrid_search
     assert rc == 2
     # Should not have called hybrid_search
     mock_hybrid_search.assert_not_called()
-

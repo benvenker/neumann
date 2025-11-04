@@ -24,8 +24,8 @@ import yaml
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from embeddings import embed_texts
-from indexer import get_client, semantic_search, upsert_summaries
+from embeddings import embed_texts  # noqa: E402
+from indexer import get_client, semantic_search, upsert_summaries  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -311,7 +311,8 @@ def main():
 
     if not config.has_openai_key:
         logger.warning("⚠️  OPENAI_API_KEY not set - embeddings will fail")
-        logger.warning("  Set OPENAI_API_KEY in .env or environment to run this test")
+        logger.warning("  Add OPENAI_API_KEY to .env (or prefix this command) before rerunning.")
+        logger.warning("  If you recently updated .env, recreate the tmux session so it picks up the new key.")
         sys.exit(1)
     else:
         logger.info("✓ OPENAI_API_KEY configured")
@@ -355,4 +356,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

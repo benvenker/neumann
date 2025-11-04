@@ -10,7 +10,7 @@ def reload_config_module():
     return importlib.import_module("config")
 
 
-def test_config_defaults(tmp_path, monkeypatch):
+def test_config_defaults(monkeypatch):
     # Ensure no env leaks
     monkeypatch.delenv("ASSET_BASE_URL", raising=False)
     monkeypatch.delenv("CHROMA_PATH", raising=False)
@@ -23,11 +23,13 @@ def test_config_defaults(tmp_path, monkeypatch):
     cfg = cfg_mod.config
 
     assert str(cfg.ASSET_BASE_URL) == "http://127.0.0.1:8000"
-    assert cfg.CHROMA_PATH == "./chroma_data"
+    expected_chroma = str((Path(__file__).parent.parent / "chroma_data").resolve())
+    assert expected_chroma == cfg.CHROMA_PATH
     assert cfg.LINES_PER_CHUNK == 180
     assert cfg.OVERLAP == 30
     assert cfg.has_openai_key is False
     assert isinstance(cfg.chroma_path, Path)
+    assert cfg.SUMMARY_MODEL == "gpt-4.1-mini"
 
 
 def test_config_from_env(monkeypatch):
@@ -36,15 +38,17 @@ def test_config_from_env(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("LINES_PER_CHUNK", "200")
     monkeypatch.setenv("OVERLAP", "20")
+    monkeypatch.setenv("SUMMARY_MODEL", "gpt-4o-mini")
 
     cfg_mod = reload_config_module()
     cfg = cfg_mod.Config()  # instantiate fresh to pick up env
 
     assert str(cfg.ASSET_BASE_URL) == "http://localhost:9000"
-    assert cfg.CHROMA_PATH == "/tmp/chroma"
+    assert str(Path("/tmp/chroma").resolve()) == cfg.CHROMA_PATH
     assert cfg.LINES_PER_CHUNK == 200
     assert cfg.OVERLAP == 20
     assert cfg.has_openai_key is True
+    assert cfg.SUMMARY_MODEL == "gpt-4o-mini"
 
 
 def test_overlap_validation(monkeypatch):
@@ -56,7 +60,7 @@ def test_overlap_validation(monkeypatch):
 
 
 def test_require_openai(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "")
     cfg_mod = reload_config_module()
     cfg = cfg_mod.Config()
 

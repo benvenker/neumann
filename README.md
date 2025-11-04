@@ -182,8 +182,35 @@ Currently available:
 - `/docs` - Interactive API documentation (OpenAPI/Swagger)
 - `/openapi.json` - OpenAPI schema
 
+**Search endpoints** (nm-3573.2):
+- **POST `/api/v1/search/lexical`** - FTS and regex search over code chunks
+- **POST `/api/v1/search/semantic`** - Vector similarity search over summaries (requires `OPENAI_API_KEY`)
+- **POST `/api/v1/search/hybrid`** - Combined semantic + lexical with weighted fusion
+
+**Examples**:
+
+```bash
+# Lexical search: Find "vector" in indexer.py
+curl -s http://127.0.0.1:8001/api/v1/search/lexical \
+  -H 'Content-Type: application/json' \
+  -d '{"must_terms": ["vector"], "path_like": "indexer.py", "k": 5}'
+
+# Semantic search: Natural language query (requires OPENAI_API_KEY)
+curl -s http://127.0.0.1:8001/api/v1/search/semantic \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "vector store retrieval", "k": 5}'
+
+# Hybrid search: Combine semantic query with regex filter
+curl -s http://127.0.0.1:8001/api/v1/search/hybrid \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "authentication", "regexes": ["redirect_uri"], "k": 5}'
+```
+
+**Error codes**:
+- **400 Bad Request**: Missing `OPENAI_API_KEY` for semantic/hybrid, invalid `k`, empty queries, no filters provided
+- **502 Bad Gateway**: Upstream ChromaDB or embedding service errors
+
 **Upcoming endpoints** (tracked in Beads):
-- **nm-3573.2**: `/api/v1/search` - Hybrid, lexical, and semantic search endpoints
 - **nm-3573.3**: `/api/v1/docs` - Document pages and chunks endpoints  
 - **nm-3573.4**: `/api/v1/config` - Configuration and service info
 

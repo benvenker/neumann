@@ -22,8 +22,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from chunker import chunk_file_by_lines
-from indexer import get_client, lexical_search, upsert_code_chunks
+from chunker import chunk_file_by_lines  # noqa: E402
+from indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -46,7 +46,7 @@ def find_text_files(root_dir: Path) -> list[Path]:
 
 def index_file(file_path: Path, chroma_client, output_root: Path) -> int:
     """Index a single file by chunking and upserting into ChromaDB.
-    
+
     Returns the number of chunks indexed.
     """
     logger.info(f"Processing {file_path.name}...")
@@ -221,4 +221,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(f"Fatal error: {type(e).__name__}: {e}")
         sys.exit(1)
-

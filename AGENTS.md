@@ -67,7 +67,7 @@ Key behaviors to remember:
 
 ## 4. Toolchain & Quality Gates
 - **Python 3.10** (see `.python-version`); dependencies managed with **uv**.
-- Core libs: WeasyPrint 62.3, PyMuPDF 1.24.8, Pillow 10.4.0, Pygments 2.18.0, Markdown 3.6, ChromaDB 1.3.0, OpenAI 2.6.1, Pydantic 2.12.3, pydantic-settings 2.11.0.
+ - Core libs: WeasyPrint 66.0, PyMuPDF 1.24.8, Pillow 10.4.0, Pygments 2.18.0, Markdown 3.6, ChromaDB 1.3.0, OpenAI 2.6.1, Pydantic 2.12.3, pydantic-settings 2.11.0.
 - Dev tooling: `ruff` (formatter & linter), `mypy`, `pytest`, `ast-grep`, `tmux`.
 - Standard commands:
   - `uv pip install -e ".[dev]"` (first setup).
@@ -255,10 +255,128 @@ If you introduce new process-heavy folders (e.g., `services/`, `ui/`), add a sib
 - **Run full ingestion**: `neumann ingest --input-dir ./docs --out-dir ./out`.
 - **Search workflow**: `neumann search "query" --must term --path-like file.py`. `query` optional for lexical-only if no OpenAI key.
 - **Serve output**: `neumann serve ./out --asset-root out`.
+- **Run manual tests**: Always use `scripts/test-manual tests/manual/test_<name>.py` to ensure correct environment variable handling (see §10 below).
 
 ---
 
-## 10. Additional Notes
+## 10. Environment Variable Precedence & Configuration Issues
+
+### ⚠️ Critical: Pydantic Loads Environment Variables BEFORE .env Files
+
+**Problem:** If you have `export OPENAI_API_KEY=old-key` in `~/.zshrc` or a global `~/.env`, it will **override** the project's `.env` file. This causes:
+- New API keys in project `.env` to be ignored
+- "Quota exceeded" errors even after updating `.env`
+- Different keys used by different processes
+- Confusing debugging ("why isn't my config working?")
+
+**Root cause:** pydantic-settings precedence order:
+1. Environment variables (highest priority)
+2. `.env` file (lower priority)
+3. Default values (lowest priority)
+
+### Solution: Never Export API Keys Globally
+
+**DO NOT do this in ~/.zshrc:**
+```bash
+# ✗ BAD - Overrides project .env
+export OPENAI_API_KEY=sk-proj-...
+```
+
+**DO use project-local .env:**
+```bash
+# ✓ GOOD - Each project has its own key
+# In /Users/ben/code/neumann/.env
+OPENAI_API_KEY=sk-proj-...
+```
+
+### Detecting The Issue
+
+**Check for global overrides:**
+```bash
+env | grep OPENAI_API_KEY
+# If you see output, you have a global override!
+```
+
+**Check if ~/.env exists:**
+```bash
+cat ~/.env 2>/dev/null | grep OPENAI
+```
+
+**Fix immediately:**
+```bash
+# Remove from global environment
+unset OPENAI_API_KEY
+
+# Remove from ~/.zshrc (if present)
+# Edit ~/.zshrc and delete any export OPENAI_API_KEY= lines
+
+# Remove from ~/.env (if it exists)
+# Edit ~/.env and remove API keys
+
+# Restart all processes
+tmux kill-server  # Nuclear option, kills all sessions
+```
+
+### Best Practice: Use On-Demand Key Loading
+
+For tools that need API keys, use the function wrapper pattern (like `llms-txt()` in `~/.zshrc`):
+
+```bash
+# Fetch API key only when command runs, from 1Password
+my-tool() {
+  OPENAI_API_KEY="$(op item get 'My OpenAI Key' --fields notesPlain)" \
+  command my-tool "$@"
+}
+```
+
+Benefits:
+- Keys never persisted in environment
+- No accidental exposure
+- Each command can use different keys
+- Project `.env` files work correctly
+
+### Running Manual Tests with Correct Environment
+
+**direnv should handle this automatically** if properly configured:
+
+1. **One-time setup:** Run `direnv allow` in the project directory to whitelist `.envrc`
+2. **Automatic loading:** direnv automatically loads `.envrc` when you `cd` into the directory
+3. **The `.envrc` file** explicitly exports `OPENAI_API_KEY` from `.env`, overriding global exports
+
+```bash
+# If direnv is working, just run tests normally:
+python3 tests/manual/test_summarization.py
+pytest tests/manual/test_*.py
+
+# If direnv isn't active, use the wrapper script:
+scripts/test-manual tests/manual/test_summarization.py
+```
+
+**Checking if direnv is active:**
+```bash
+cd /Users/ben/code/neumann
+direnv status  # Should show ".envrc loaded"
+env | grep OPENAI_API_KEY  # Should show key from .env (sk-proj-21jbPpw...)
+```
+
+**Fallback wrapper script:** If direnv isn't configured or working in your shell, use `scripts/test-manual` which manually ensures the correct environment. This is mainly for CI environments or shells without direnv support.
+
+### Restarting Processes After Config Changes
+
+When you update `.env`, processes must be restarted:
+
+**API server:**
+```bash
+tmux kill-session -t neumann-api
+cd /Users/ben/code/neumann
+tmux new-session -d -s neumann-api 'cd /Users/ben/code/neumann && source .venv/bin/activate && uvicorn api.app:create_app --factory --reload --port 8001'
+```
+
+**Important:** tmux sessions inherit the environment from when they're created. If you had `OPENAI_API_KEY` set when you created the session, it persists even after you `unset` it in another terminal. Always kill and recreate tmux sessions after environment changes.
+
+---
+
+## 11. Additional Notes
 - System dependencies (macOS): `brew install cairo pango gdk-pixbuf libffi`. Ubuntu equivalents listed in `docs/AGENTS.md`.
 - `.envrc` enables direnv; run `direnv allow` after cloning.
 - Keep `CLAUDE.md` up to date for architectural history; treat this file as the canonical agent guide going forward.

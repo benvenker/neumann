@@ -55,7 +55,7 @@ def acceptance_corpus() -> Path:
 @pytest.fixture(scope="module")
 def acceptance_ingested(tmp_path_factory, acceptance_corpus: Path) -> dict[str, Any]:
     """Ingest the full test_data corpus and return context.
-    
+
     Returns dict with:
     - out_dir: Output directory path
     - chroma_path: ChromaDB storage path
@@ -336,7 +336,7 @@ def test_query_latency_statistics(acceptance_ingested: dict[str, Any]) -> None:
         ("", None, [r"\bfunction\b"]),
     ]
 
-    for query, must_terms, regexes in test_queries:
+    for _query, must_terms, regexes in test_queries:
         start = time.time()
         hybrid_search("", k=5, must_terms=must_terms, regexes=regexes, client=client)
         latency = time.time() - start
@@ -536,4 +536,3 @@ The Neumann pipeline successfully:
     report_path.write_text(report, encoding="utf-8")
     print(f"✓ Report generated: {report_path}")
     print(f"\n{report}")
-

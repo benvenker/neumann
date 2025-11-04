@@ -374,7 +374,7 @@ def test_load_page_uris_with_empty_uri(tmp_path: Path):
 
 def test_small_file_over_16kb_chunked_fully(tmp_path: Path):
     """Test that a file with n ≤ per_chunk but total bytes > 16KB is fully chunked without data loss.
-    
+
     This addresses the bug where the special-case branch would shrink the file and
     return early with incorrect line_end metadata, dropping the remainder of the file.
     """
@@ -408,7 +408,7 @@ def test_small_file_over_16kb_chunked_fully(tmp_path: Path):
 
 def test_multiline_with_first_line_very_long(tmp_path: Path):
     """Test that a multi-line file with the first line > 16KB splits that line properly.
-    
+
     This verifies that long single lines are handled correctly even when they appear
     in multi-line files, not just as standalone single-line files.
     """
@@ -441,4 +441,3 @@ def test_multiline_with_first_line_very_long(tmp_path: Path):
     # Verify all subsequent chunks start at line 2 or later
     for chunk in subsequent_chunks:
         assert chunk["line_start"] >= 2, f"Unexpected line_start: {chunk['line_start']}"
-

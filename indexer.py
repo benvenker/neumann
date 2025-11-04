@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from pathlib import Path
 from re import Pattern
 from typing import Any, TypedDict
 
@@ -13,11 +15,13 @@ from chromadb.api.models.Collection import Collection
 from config import config
 from embeddings import embed_texts
 
+logger = logging.getLogger(__name__)
+
 # Lexical scoring defaults (tunable)
-LEX_W_TERM: float = 1.0       # weight for substring term matches
-LEX_W_REGEX: float = 1.5      # weight for regex matches (identifiers)
-LEX_TERM_CAP: int = 3         # cap per term (prevent repeat domination)
-LEX_REGEX_CAP: int = 3        # cap per regex
+LEX_W_TERM: float = 1.0  # weight for substring term matches
+LEX_W_REGEX: float = 1.5  # weight for regex matches (identifiers)
+LEX_TERM_CAP: int = 3  # cap per term (prevent repeat domination)
+LEX_REGEX_CAP: int = 3  # cap per regex
 LEX_LENGTH_ALPHA: float = 0.2  # strength of mild length penalty
 LEX_PATH_ONLY_BASELINE: float = 0.25  # baseline when only path_like matches
 LEX_PATH_FETCH_MULTIPLIER: int = 10  # multiplier for fetch limit when path filtering
@@ -34,8 +38,23 @@ NORMALIZED_META_LIST_KEYS: list[str] = [
 
 
 def get_client(path: str | None = None) -> ClientAPI:
+    """Get ChromaDB persistent client with resolved absolute path.
+
+    Args:
+        path: Optional ChromaDB storage path. If None, uses config.CHROMA_PATH.
+            Both relative and absolute paths are resolved to absolute.
+
+    Returns:
+        ClientAPI: ChromaDB persistent client.
+
+    Note:
+        Paths are always resolved to absolute to ensure CLI and API processes
+        use the same database regardless of their current working directory.
+    """
     storage_path = path or config.CHROMA_PATH
-    return chromadb.PersistentClient(path=storage_path)
+    # Resolve to absolute path to avoid CWD-dependent path mismatches
+    resolved_path = str(Path(storage_path).expanduser().resolve())
+    return chromadb.PersistentClient(path=resolved_path)
 
 
 def get_collections(
@@ -128,16 +147,14 @@ def _sanitize_list(xs: Sequence[str] | None) -> list[str]:
     return out
 
 
-def _build_where_document(
-    must_terms: list[str] | None, regexes: list[str] | None
-) -> dict[str, Any] | None:
+def _build_where_document(must_terms: list[str] | None, regexes: list[str] | None) -> dict[str, Any] | None:
     """Build ChromaDB where_document filter combining must_terms and regexes.
-    
+
     Filter semantics:
     - must_terms: Combined via AND of {"$contains": term} (case-sensitive in Chroma)
     - regexes: Combined via OR of {"$regex": pattern} (honors pattern flags; embed (?i) for case-insensitive)
     - Both present: The two groups are ANDed together: {"$and": [terms_group, regex_group]}
-    
+
     Notes:
     - Chroma's $contains is case-sensitive
     - Chroma's $regex follows the pattern's semantics (flags embedded in pattern are honored)
@@ -148,23 +165,17 @@ def _build_where_document(
     terms = _sanitize_list(must_terms)
     regs = _sanitize_list(regexes)
 
-    terms_group: dict[str, Any] | None = None
-    if terms:
-        if len(terms) == 1:
-            # Single term: no need for $and wrapper
-            terms_group = {"$contains": terms[0]}
-        else:
-            # Multiple terms: wrap in $and
-            terms_group = {"$and": [{"$contains": t} for t in terms]}
+    terms_group: dict[str, Any] | None = (
+        {"$contains": terms[0]}
+        if terms and len(terms) == 1
+        else {"$and": [{"$contains": t} for t in terms]} if terms else None
+    )
 
-    regex_group: dict[str, Any] | None = None
-    if regs:
-        if len(regs) == 1:
-            # Single regex: no need for $or wrapper
-            regex_group = {"$regex": regs[0]}
-        else:
-            # Multiple regexes: wrap in $or
-            regex_group = {"$or": [{"$regex": r} for r in regs]}
+    regex_group: dict[str, Any] | None = (
+        {"$regex": regs[0]}
+        if regs and len(regs) == 1
+        else {"$or": [{"$regex": r} for r in regs]} if regs else None
+    )
 
     if terms_group and regex_group:
         return {"$and": [terms_group, regex_group]}
@@ -173,11 +184,12 @@ def _build_where_document(
 
 def _build_where_metadata(path_like: str | None) -> dict[str, Any] | None:
     """Build ChromaDB where filter for source_path metadata.
-    
+
     Note: ChromaDB's metadata filters don't support $contains, so path filtering
     is handled client-side after retrieval. This function is kept for future use
     if ChromaDB adds substring matching support.
     """
+    _ = path_like  # placeholder for future metadata filtering support
     # ChromaDB metadata doesn't support $contains, so we filter client-side
     return None
 
@@ -197,14 +209,15 @@ def _compile_regexes(regexes: list[str]) -> list[tuple[Pattern[str], str]]:
 
 class LexicalMetrics(TypedDict, total=False):
     """Metrics returned by _compute_lexical_score for scoring and explainability."""
-    term_hits: int               # uncapped total across terms
-    regex_hits: int              # uncapped total across regexes
+
+    term_hits: int  # uncapped total across terms
+    regex_hits: int  # uncapped total across regexes
     doc_len: int
-    per_term: dict[str, int]     # exact input term -> count
-    per_regex: dict[str, int]    # raw regex pattern string -> count
-    raw: float                   # weighted sum with caps, pre-normalization
-    max_raw: float               # theoretical max given caps and query shape
-    length_pen: float            # multiplicative penalty applied
+    per_term: dict[str, int]  # exact input term -> count
+    per_regex: dict[str, int]  # raw regex pattern string -> count
+    raw: float  # weighted sum with caps, pre-normalization
+    max_raw: float  # theoretical max given caps and query shape
+    length_pen: float  # multiplicative penalty applied
 
 
 def _compute_lexical_score(
@@ -213,13 +226,13 @@ def _compute_lexical_score(
     compiled_patterns: list[tuple[Pattern[str], str]],
 ) -> tuple[float, LexicalMetrics]:
     """Compute a 0–1 lexical score with capped match counts and mild length penalty.
-    
+
     - Counts occurrences per term (case-insensitive, non-overlapping)
     - Counts regex matches (finditer; ignores zero-length)
     - Caps per-term and per-regex contributions to reduce domination by repeats
     - Applies mild length penalty so concise chunks rate slightly higher
     - Normalizes by the maximum possible raw score given caps and query shape
-    
+
     Returns:
         (score, metrics_dict) where score is in [0,1] and metrics contains hit counts
     """
@@ -246,9 +259,7 @@ def _compute_lexical_score(
 
     # Raw score and max possible (for normalization)
     raw = LEX_W_TERM * sum(term_hits_capped) + LEX_W_REGEX * sum(regex_hits_capped)
-    max_raw = LEX_W_TERM * (len(terms) * LEX_TERM_CAP) + LEX_W_REGEX * (
-        len(compiled_patterns) * LEX_REGEX_CAP
-    )
+    max_raw = LEX_W_TERM * (len(terms) * LEX_TERM_CAP) + LEX_W_REGEX * (len(compiled_patterns) * LEX_REGEX_CAP)
 
     if max_raw <= 0:
         return 0.0, LexicalMetrics(
@@ -279,12 +290,44 @@ def _compute_lexical_score(
     )
 
 
+def _filters_satisfied(
+    metrics: LexicalMetrics, terms: list[str], compiled: list[tuple[Pattern[str], str]]
+) -> bool:
+    """Check if lexical filter semantics are satisfied based on metrics.
+
+    Returns True if:
+        - terms is empty OR every term has count > 0 in metrics.per_term
+        - compiled is empty OR at least one pattern has count > 0 in metrics.per_regex
+
+    This enforces AND semantics for terms (all must match) and OR semantics for regexes
+    (at least one must match).
+
+    Args:
+        metrics: LexicalMetrics dict with per_term and per_regex counts
+        terms: List of search terms that must all be present (AND logic)
+        compiled: List of (pattern, raw_string) tuples for regex matching (OR logic)
+
+    Returns:
+        True if filters are satisfied, False otherwise
+    """
+    per_term = metrics.get("per_term") or {}
+    per_regex = metrics.get("per_regex") or {}
+
+    # AND semantics: all terms must have count > 0
+    terms_ok = True if not terms else all(per_term.get(t, 0) > 0 for t in terms)
+
+    # OR semantics: at least one regex must have count > 0
+    regex_ok = True if not compiled else any(per_regex.get(raw, 0) > 0 for _, raw in compiled)
+
+    return terms_ok and regex_ok
+
+
 def _parse_meta_list(value: object) -> list[str]:
     """Normalize list-like metadata fields from comma-separated strings or lists to deduplicated lists.
-    
+
     Args:
         value: Either a list (convert items to str, strip), a string (split on commas), or other (return [])
-    
+
     Returns:
         Deduplicated list of strings, preserving order
     """
@@ -311,7 +354,7 @@ def _parse_meta_list(value: object) -> list[str]:
 
 def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> dict[str, object]:
     """Convert metadata values to Chroma-acceptable primitives.
-    
+
     - list -> comma-joined string (empty list -> "")
     - primitives (str, int, float, bool, None) -> unchanged
     - others (dict, Path, datetime, etc.) -> str(value)
@@ -331,10 +374,10 @@ def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> dict[st
 
 def _distance_to_score(d: float | None) -> float:
     """Convert Chroma distance to a bounded [0,1] relevance score (higher is better).
-    
+
     Args:
         d: Distance value (None or float). Lower distances indicate higher relevance.
-    
+
     Returns:
         Score in [0,1] range, where 1.0 is highest relevance. Returns 0.0 if d is None.
     """
@@ -431,6 +474,27 @@ def lexical_search(
         include=["documents", "metadatas"],
     )
 
+    # Client-side fallback if where_document filters returned empty
+    # Some ChromaDB backends don't fully support $contains/$regex
+    if not res.get("ids") and where_doc:
+        # Fetch capped docs without document filters and filter client-side
+        fallback_limit = min(5000, fetch_limit * 10)
+        logger.debug(
+            "Chroma where_document returned no results; falling back to broad fetch. "
+            "fetch_limit=%d, fallback_limit=%d, terms=%s, regexes=%s, path_like=%s",
+            fetch_limit,
+            fallback_limit,
+            terms,
+            valid_regs,
+            pl,
+        )
+        res = code.get(
+            where=where_meta,  # Keep metadata filters if any
+            limit=fallback_limit,
+            include=["documents", "metadatas"],
+        )
+        # Note: Client-side filtering happens below in the iteration loop
+
     # Assemble results
     results: list[dict[str, Any]] = []
     ids = res.get("ids", [])
@@ -462,6 +526,11 @@ def lexical_search(
         # Compute lexical score (0–1) and get metrics for why signals
         lex_score, metrics = _compute_lexical_score(doc_str, terms, compiled_patterns)
 
+        # Enforce filter semantics: if terms or regexes were provided, ensure they're satisfied
+        # This applies to both normal queries and fallback paths to ensure consistent behavior
+        if (terms or compiled_patterns) and not _filters_satisfied(metrics, terms, compiled_patterns):
+            continue  # Skip this candidate if filters aren't satisfied
+
         # Build why signals using metrics (avoid re-counting)
         why: list[str] = []
         for term, cnt in (metrics.get("per_term") or {}).items():
@@ -481,9 +550,7 @@ def lexical_search(
         if path_matched and not terms and not compiled_patterns:
             if lex_score < LEX_PATH_ONLY_BASELINE:
                 lex_score = LEX_PATH_ONLY_BASELINE
-            why.append(
-                f"path-only match baseline applied: {LEX_PATH_ONLY_BASELINE:.2f}"
-            )
+            why.append(f"path-only match baseline applied: {LEX_PATH_ONLY_BASELINE:.2f}")
 
         # Compute tie-breaker keys for deterministic sorting
         any_term = any(c > 0 for c in (metrics.get("per_term") or {}).values())
@@ -504,7 +571,7 @@ def lexical_search(
 
         results.append(
             {
-                "doc_id": doc_id,
+                "doc_id": str(doc_id),
                 "source_path": source_path,
                 "score": lex_score,
                 "page_uris": page_uris,
@@ -559,7 +626,7 @@ def semantic_search(
     Returns:
         List of result dicts with doc_id, source_path, score, page_uris, line_start,
         line_end, why, and normalized metadata dict for downstream consumers.
-        
+
         Note: page_uris appears both top-level (for convenience) and in metadata
         (for completeness). This is intentional duplication for UX.
     """
@@ -571,10 +638,11 @@ def semantic_search(
 
     # Embed query using provided function or default embed_texts
     try:
-        if embedding_function is None:
-            vecs = embed_texts([q])
-        else:
-            vecs = embedding_function([q])
+        vecs = (
+            embed_texts([q])
+            if embedding_function is None
+            else embedding_function([q])
+        )
     except Exception as e:
         error_msg = str(e)
         if "OPENAI_API_KEY" in error_msg or "api key" in error_msg.lower():
@@ -627,7 +695,7 @@ def semantic_search(
         # Note: page_uris appears both top-level (for convenience) and in metadata (for completeness)
         out.append(
             {
-                "doc_id": doc_id,
+                "doc_id": str(doc_id),
                 "source_path": source_path,
                 "score": score,
                 "page_uris": page_uris,
@@ -654,12 +722,12 @@ def hybrid_search(
     w_lexical: float = 0.4,
 ) -> list[dict[str, Any]]:
     """Hybrid search combining semantic and lexical channels using weighted-sum fusion.
-    
+
     Supports three modes:
     - Semantic-only: query provided, no lexical filters
     - Lexical-only: lexical filters provided, no query
     - True hybrid: both query and filters provided (results fused via weighted sum)
-    
+
     Args:
         query: Natural-language query for semantic search
         k: Maximum results to return
@@ -670,12 +738,12 @@ def hybrid_search(
         embedding_function: Optional embedding function for testing
         w_semantic: Weight for semantic channel (default 0.6)
         w_lexical: Weight for lexical channel (default 0.4)
-    
+
     Returns:
         List of result dicts with doc_id, source_path, score (weighted sum),
         sem_score, lex_score, rrf_score (tie-breaker), page_uris, line_start,
         line_end, and why signals.
-    
+
     Notes:
         - score = w_semantic * sem_score + w_lexical * lex_score (default 0.6/0.4)
         - rrf_score provided for tie-breaking and debugging
@@ -698,11 +766,7 @@ def hybrid_search(
         return []
 
     # Execute channels conditionally
-    sem_results = (
-        semantic_search(q, k, client=client, embedding_function=embedding_function)
-        if run_semantic
-        else []
-    )
+    sem_results = semantic_search(q, k, client=client, embedding_function=embedding_function) if run_semantic else []
     lex_results = (
         lexical_search(must_terms=must_terms, regexes=regexes, path_like=path_like, k=k, client=client)
         if run_lexical
@@ -730,52 +794,50 @@ def hybrid_search(
     # Fuse results with weighted sum + RRF tie-breaker
     fused: list[dict[str, Any]] = []
     for did in set(sem_by_doc) | set(lex_by_doc):
-        s = sem_by_doc.get(did)
-        l = lex_by_doc.get(did)
+        sem_match = sem_by_doc.get(did)
+        lex_match = lex_by_doc.get(did)
 
         # Compute RRF score (for tie-breaking)
-        fused_rrf = (
-            _rrf_component(sem_rank_by_doc.get(did), RRF_K) +
-            _rrf_component(lex_rank_by_doc.get(did), RRF_K)
-        )
+        fused_rrf = _rrf_component(sem_rank_by_doc.get(did), RRF_K) + _rrf_component(lex_rank_by_doc.get(did), RRF_K)
 
         # Channel scores for weighted sum
-        sem_score = float((s or {}).get("score") or 0.0)
-        lex_score = float((l or {}).get("score") or 0.0)
+        sem_score = float((sem_match or {}).get("score") or 0.0)
+        lex_score = float((lex_match or {}).get("score") or 0.0)
 
         # Combined score: weighted sum if both present, else single-channel
-        if s and l:
-            combined = w_semantic * sem_score + w_lexical * lex_score
-        else:
-            combined = sem_score or lex_score
+        combined = (
+            w_semantic * sem_score + w_lexical * lex_score
+            if sem_match and lex_match
+            else sem_score or lex_score
+        )
 
         # Merge fields (prefer lexical for granular details)
-        source_path = (l or {}).get("source_path") or (s or {}).get("source_path")
-        page_uris = _merge_unique_ordered(
-            (l or {}).get("page_uris"), (s or {}).get("page_uris")
-        )
-        line_start = (l or {}).get("line_start") or (s or {}).get("line_start")
-        line_end = (l or {}).get("line_end") or (s or {}).get("line_end")
+        source_path = (lex_match or {}).get("source_path") or (sem_match or {}).get("source_path")
+        page_uris = _merge_unique_ordered((lex_match or {}).get("page_uris"), (sem_match or {}).get("page_uris"))
+        line_start = (lex_match or {}).get("line_start") or (sem_match or {}).get("line_start")
+        line_end = (lex_match or {}).get("line_end") or (sem_match or {}).get("line_end")
 
         # Concatenate why signals
         why: list[str] = []
-        if l and isinstance(l.get("why"), list):
-            why.extend(l["why"])
-        if s and isinstance(s.get("why"), list):
-            why.extend(s["why"])
+        if lex_match and isinstance(lex_match.get("why"), list):
+            why.extend(lex_match["why"])
+        if sem_match and isinstance(sem_match.get("why"), list):
+            why.extend(sem_match["why"])
 
-        fused.append({
-            "doc_id": did,
-            "source_path": source_path,
-            "score": combined,          # final weighted score (0–1)
-            "sem_score": sem_score,     # for debugging/UX
-            "lex_score": lex_score,     # for debugging/UX
-            "rrf_score": fused_rrf,     # tie-break/info
-            "page_uris": page_uris,
-            "line_start": line_start,
-            "line_end": line_end,
-            "why": why,
-        })
+        fused.append(
+            {
+                "doc_id": did,
+                "source_path": source_path,
+                "score": combined,  # final weighted score (0–1)
+                "sem_score": sem_score,  # for debugging/UX
+                "lex_score": lex_score,  # for debugging/UX
+                "rrf_score": fused_rrf,  # tie-break/info
+                "page_uris": page_uris,
+                "line_start": line_start,
+                "line_end": line_end,
+                "why": why,
+            }
+        )
 
     # Sort by combined score, break ties by RRF
     fused.sort(key=lambda r: (r.get("score", 0.0), r.get("rrf_score", 0.0)), reverse=True)
@@ -791,5 +853,3 @@ __all__ = [
     "semantic_search",
     "hybrid_search",
 ]
-
-

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import urlparse
 
-from pydantic import Field, ValidationError, field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,6 +42,11 @@ class Config(BaseSettings):
         description="API key for OpenAI (required for summaries/embeddings).",
     )
 
+    SUMMARY_MODEL: str = Field(
+        default="gpt-4.1-mini",
+        description="OpenAI model used for summary generation. If the model does not support response_format=json_schema, the summarizer falls back to response_format=json_object automatically.",
+    )
+
     # Chunking
     LINES_PER_CHUNK: int = Field(default=180, ge=1, le=10000)
     OVERLAP: int = Field(default=30, ge=0, le=1000)
@@ -68,6 +73,32 @@ class Config(BaseSettings):
         if isinstance(lines_per_chunk, int) and v >= lines_per_chunk:
             raise ValueError("OVERLAP must be less than LINES_PER_CHUNK")
         return v
+
+    @field_validator("CHROMA_PATH")
+    @classmethod
+    def normalize_chroma_path(cls, v: str) -> str:
+        """
+        Normalize CHROMA_PATH to an absolute path.
+
+        Relative paths are resolved from the project root (where config.py lives),
+        not from the current working directory. This ensures CLI and API processes
+        use the same ChromaDB location regardless of where they're started from.
+
+        Examples:
+            - "./chroma_data" → "/Users/ben/code/neumann/chroma_data"
+            - "~/data/chroma" → "/Users/ben/data/chroma"
+            - "/abs/path" → "/abs/path"
+        """
+        path = Path(v).expanduser()  # Handle ~ expansion
+
+        if not path.is_absolute():
+            # Resolve relative paths from project root (where this file lives)
+            project_root = Path(__file__).parent
+            path = (project_root / path).resolve()
+        else:
+            path = path.resolve()
+
+        return str(path)
 
     @field_validator("API_CORS_ORIGINS", mode="before")
     @classmethod
@@ -118,16 +149,7 @@ class Config(BaseSettings):
     def require_openai(self) -> None:
         """Raise a helpful error if OpenAI is not configured."""
         if not self.OPENAI_API_KEY:
-            raise ValidationError(
-                [
-                    {
-                        "loc": ("OPENAI_API_KEY",),
-                        "msg": "OPENAI_API_KEY is required for summaries/embeddings",
-                        "type": "value_error.missing",
-                    }
-                ],
-                Config,
-            )
+            raise ValueError("OPENAI_API_KEY is required for summaries/embeddings")
 
 
 # Eagerly load configuration at import time for convenience across modules

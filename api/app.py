@@ -6,11 +6,15 @@ This module provides:
 - app: Module-level instance for uvicorn (uvicorn api.app:app)
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .deps import get_settings
 from .routes import api_router
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -28,6 +32,10 @@ def create_app() -> FastAPI:
     )
 
     cfg = get_settings()
+
+    # Log ChromaDB path for debugging path mismatches
+    logger.info(f"ChromaDB path: {cfg.CHROMA_PATH}")
+    logger.info(f"OpenAI configured: {cfg.has_openai_key}")
 
     # Add CORS middleware only if origins are configured
     origins = cfg.API_CORS_ORIGINS or []

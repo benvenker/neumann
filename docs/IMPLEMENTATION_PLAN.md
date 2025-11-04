@@ -47,7 +47,7 @@ Manifest Generation (JSONL/JSON/TSV)
 ### Dependencies
 
 **Core Processing:**
-- `weasyprint==62.3` - HTML → PDF rendering with Cairo backend
+- `weasyprint==66.0` - HTML → PDF rendering with Cairo backend
 - `pymupdf==1.24.8` - PDF → image rasterization
 - `pillow==10.4.0` - Image manipulation and WebP encoding
 - `pygments==2.18.0` - Syntax highlighting for code files
