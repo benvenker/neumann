@@ -71,3 +71,6 @@ chroma_data/
 
 # Test outputs
 test_output/
+
+# Beads local tracker
+.beads/
