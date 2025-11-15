@@ -146,9 +146,7 @@ def pretty_print_results(results: list[dict[str, Any]]) -> None:
         uris = r.get("page_uris") or []
         if isinstance(uris, str):
             s = uris.strip()
-            uris = (
-                [u.strip() for u in s.split(",")] if "," in s else [s]
-            ) if s else []
+            uris = ([u.strip() for u in s.split(",")] if "," in s else [s]) if s else []
         if uris:
             shown = uris[:MAX_PAGE_URIS]
             more = len(uris) - len(shown)
@@ -266,9 +264,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                         summarized += 1
                         words = len(fs.summary_md.split())
                         summary_dur = time.perf_counter() - stage_start
-                        tqdm.write(
-                            f"  summary: {words} words in {summary_dur:.2f}s -> {summary_path}"
-                        )
+                        tqdm.write(f"  summary: {words} words in {summary_dur:.2f}s -> {summary_path}")
                     except Exception as e:
                         tqdm.write(f"[warn] Failed to summarize {src}: {e}")
                 elif args.no_summary:
@@ -296,9 +292,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                             indexed_chunks += len(chunk_items)
                         index_dur = time.perf_counter() - stage_start
                         summary_desc = "summary + " if summary_item and config.has_openai_key else ""
-                        tqdm.write(
-                            f"  index: {summary_desc}{len(chunk_items)} chunks in {index_dur:.2f}s"
-                        )
+                        tqdm.write(f"  index: {summary_desc}{len(chunk_items)} chunks in {index_dur:.2f}s")
                     except Exception as e:
                         tqdm.write(f"[warn] Failed to index {src}: {e}")
                 elif args.no_index:
@@ -353,7 +347,11 @@ def cmd_search(args: argparse.Namespace) -> int:
     # Use --db-path if provided, otherwise use config default
     db_path_arg = getattr(args, "db_path", None)
     db_path_used = str(Path(db_path_arg).resolve()) if db_path_arg else config.CHROMA_PATH
-    print(f"Using ChromaDB at: {db_path_used}")
+    banner_msg = f"Using ChromaDB at: {db_path_used}"
+    if getattr(args, "json", False):
+        print(banner_msg, file=sys.stderr)
+    else:
+        print(banner_msg)
 
     # Create client with explicit path
     client = get_client(path=db_path_used if db_path_arg else None)
