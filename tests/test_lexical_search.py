@@ -400,3 +400,32 @@ def test_regex_scoring_and_ordering(tmp_path: Path) -> None:
     # Verify ordering by score (capped but tie-breakers ensure file1 comes first)
     assert results[0]["doc_id"] == "file1"
     assert results[1]["doc_id"] == "file2"
+
+
+def test_lexical_search_nonstring_doc_id(tmp_path: Path) -> None:
+    """Test that non-string doc_id values in metadata are converted to strings."""
+    client = get_client(str(tmp_path / "chroma"))
+
+    # Insert a code chunk with integer doc_id in metadata
+    upsert_code_chunks(
+        [
+            {
+                "id": "chunk1",
+                "document": "This is a test document with authentication",
+                "metadata": {
+                    "doc_id": 12345,  # Integer instead of string
+                    "source_path": "src/file1.ts",
+                    "lang": "ts",
+                    "line_start": 1,
+                    "line_end": 5,
+                },
+            },
+        ],
+        client=client,
+    )
+
+    results = lexical_search(must_terms=["authentication"], k=10, client=client)
+    assert len(results) == 1
+    # Verify doc_id is converted to string
+    assert results[0]["doc_id"] == "12345"
+    assert isinstance(results[0]["doc_id"], str)
