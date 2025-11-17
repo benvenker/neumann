@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 
 class SummaryFrontMatter(BaseModel):
@@ -16,20 +16,64 @@ class SummaryFrontMatter(BaseModel):
     api_symbols: list[str] = Field(default_factory=list, description="Referenced public API symbols")
     related_files: list[str] = Field(default_factory=list, description="Paths to related files")
     suggested_queries: list[str] = Field(default_factory=list, description="Suggested search queries")
+    source_word_count: int | None = Field(
+        default=None,
+        ge=0,
+        description="Word count of the original source text used for summarization.",
+    )
+    min_summary_words: int | None = Field(
+        default=None,
+        ge=0,
+        description="Lower bound used when generating the summary.",
+    )
+    max_summary_words: int | None = Field(
+        default=None,
+        ge=0,
+        description="Upper bound used when generating the summary.",
+    )
+    target_summary_words: int | None = Field(
+        default=None,
+        ge=0,
+        description="Approximate target length for the generated summary.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_word_bounds(self) -> SummaryFrontMatter:
+        """Validate summary word count bounds are coherent when present."""
+        # Only validate when all are present
+        if (
+            self.min_summary_words is not None
+            and self.max_summary_words is not None
+            and self.min_summary_words > self.max_summary_words
+        ):
+            raise ValueError("min_summary_words must be <= max_summary_words")
+        if (
+            self.min_summary_words is not None
+            and self.max_summary_words is not None
+            and self.target_summary_words is not None
+            and not (self.min_summary_words <= self.target_summary_words <= self.max_summary_words)
+        ):
+            raise ValueError("target_summary_words must be between min_summary_words and max_summary_words")
+        return self
 
 
 class FileSummary(BaseModel):
     front_matter: SummaryFrontMatter
-    summary_md: str = Field(..., description="200-400 word markdown summary body")
+    summary_md: str = Field(..., description="Markdown summary body.")
 
-    @field_validator("summary_md")
-    @classmethod
-    def validate_summary_word_count(cls, value: str) -> str:
-        words = [w for w in value.split() if w]
+    @model_validator(mode="after")
+    def validate_summary_word_count(self) -> FileSummary:
+        words = [w for w in self.summary_md.split() if w]
         word_count = len(words)
-        if word_count < 200 or word_count > 400:
-            raise ValueError(f"summary_md must be 200-400 words (got {word_count})")
-        return value
+
+        min_words = self.front_matter.min_summary_words or 200
+        max_words = self.front_matter.max_summary_words or 400
+
+        if word_count < min_words:
+            raise ValueError(f"summary_md must be at least {min_words} words (got {word_count})")
+        if word_count > max_words:
+            raise ValueError(f"summary_md must be at most {max_words} words (got {word_count})")
+        return self
 
     def to_yaml(self) -> str:
         """Serialize to YAML front-matter + markdown body suitable for .summary.md files."""

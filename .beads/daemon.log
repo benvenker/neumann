@@ -1,0 +1,147 @@
+[2025-11-15 15:58:48] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-15 15:58:48] Using database: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:58:49] Database opened: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:58:49] Repository fingerprint validated: 8fc220ea
+[2025-11-15 15:58:49] Starting RPC server: /Users/ben/code/neumann/.beads/bd.sock
+[2025-11-15 15:58:49] RPC server ready (socket listening)
+[2025-11-15 15:58:49] Registered in global registry
+[2025-11-15 15:58:49] Starting sync cycle...
+[2025-11-15 15:58:49] Exported to JSONL
+[2025-11-15 15:58:50] Pulled from remote
+[2025-11-15 15:58:50] Imported from JSONL
+[2025-11-15 15:58:50] Sync cycle complete
+[2025-11-15 15:58:50] Monitoring parent process (PID 1)
+[2025-11-15 15:58:50] Using event-driven mode
+[2025-11-15 15:58:50] Mutation detected: create nm-xyz
+[2025-11-15 15:58:50] Export triggered by mutation events
+[2025-11-15 15:58:50] Starting export...
+[2025-11-15 15:58:50] Pre-export validation failed: refusing to export: JSONL is newer than database (import first to avoid data loss)
+[2025-11-15 15:58:58] JSONL removed/renamed, re-establishing watch
+[2025-11-15 15:58:58] Successfully re-established JSONL watch after 50ms
+[2025-11-15 15:58:58] JSONL file created: /Users/ben/code/neumann/.beads/beads.base.jsonl
+[2025-11-15 15:58:59] Import triggered by file change
+[2025-11-15 15:58:59] Starting auto-import...
+[2025-11-15 15:59:00] Pulled from remote
+[2025-11-15 15:59:00] Imported from JSONL
+[2025-11-15 15:59:00] Auto-import complete
+[2025-11-15 15:59:00] Parent process (PID 1) died, shutting down daemon
+[2025-11-15 15:59:23] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-15 15:59:23] Using database: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:59:24] Database opened: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:59:24] Repository fingerprint validated: 8fc220ea
+[2025-11-15 15:59:24] Starting RPC server: /Users/ben/code/neumann/.beads/bd.sock
+[2025-11-15 15:59:24] RPC server ready (socket listening)
+[2025-11-15 15:59:24] Registered in global registry
+[2025-11-15 15:59:24] Starting sync cycle...
+[2025-11-15 15:59:24] Exported to JSONL
+[2025-11-15 15:59:25] Pulled from remote
+[2025-11-15 15:59:25] Imported from JSONL
+[2025-11-15 15:59:25] Sync cycle complete
+[2025-11-15 15:59:25] Monitoring parent process (PID 1)
+[2025-11-15 15:59:25] Using event-driven mode
+[2025-11-15 15:59:25] Mutation detected: create nm-075
+[2025-11-15 15:59:25] Mutation detected: update nm-075
+[2025-11-15 15:59:25] Mutation detected: create nm-1
+[2025-11-15 15:59:25] Mutation detected: update nm-1
+[2025-11-15 15:59:25] Mutation detected: create nm-10
+[2025-11-15 15:59:25] Mutation detected: update nm-10
+[2025-11-15 15:59:25] Mutation detected: create nm-11
+[2025-11-15 15:59:25] Mutation detected: update nm-11
+[2025-11-15 15:59:25] Mutation detected: create nm-12
+[2025-11-15 15:59:25] Mutation detected: update nm-12
+[2025-11-15 15:59:25] Mutation detected: create nm-13
+[2025-11-15 15:59:25] Mutation detected: update nm-13
+[2025-11-15 15:59:25] Mutation detected: create nm-14
+[2025-11-15 15:59:25] Mutation detected: update nm-14
+[2025-11-15 15:59:25] Mutation detected: create nm-15
+[2025-11-15 15:59:25] Mutation detected: update nm-15
+[2025-11-15 15:59:25] Mutation detected: create nm-16
+[2025-11-15 15:59:25] Mutation detected: update nm-16
+[2025-11-15 15:59:25] Mutation detected: create nm-17
+[2025-11-15 15:59:25] Mutation detected: update nm-17
+[2025-11-15 15:59:25] Mutation detected: create nm-18
+[2025-11-15 15:59:25] Mutation detected: update nm-18
+[2025-11-15 15:59:25] Mutation detected: create nm-19
+[2025-11-15 15:59:25] Mutation detected: update nm-19
+[2025-11-15 15:59:25] Mutation detected: create nm-2
+[2025-11-15 15:59:25] Mutation detected: update nm-2
+[2025-11-15 15:59:25] Mutation detected: create nm-20
+[2025-11-15 15:59:25] Mutation detected: update nm-20
+[2025-11-15 15:59:25] Mutation detected: create nm-21
+[2025-11-15 15:59:26] Mutation detected: update nm-21
+[2025-11-15 15:59:26] Mutation detected: create nm-22
+[2025-11-15 15:59:26] Mutation detected: update nm-22
+[2025-11-15 15:59:26] Mutation detected: create nm-23
+[2025-11-15 15:59:26] Mutation detected: update nm-23
+[2025-11-15 15:59:26] Mutation detected: create nm-2321
+[2025-11-15 15:59:26] Mutation detected: create nm-24
+[2025-11-15 15:59:26] Mutation detected: update nm-24
+[2025-11-15 15:59:26] Mutation detected: create nm-25
+[2025-11-15 15:59:26] Mutation detected: update nm-25
+[2025-11-15 15:59:26] Mutation detected: create nm-26
+[2025-11-15 15:59:26] Mutation detected: update nm-26
+[2025-11-15 15:59:26] Mutation detected: create nm-27
+[2025-11-15 15:59:26] Mutation detected: update nm-27
+[2025-11-15 15:59:26] Mutation detected: create nm-28
+[2025-11-15 15:59:26] Mutation detected: update nm-28
+[2025-11-15 15:59:26] Mutation detected: create nm-29
+[2025-11-15 15:59:26] Mutation detected: update nm-29
+[2025-11-15 15:59:27] Mutation detected: create nm-3
+[2025-11-15 15:59:27] Mutation detected: update nm-3
+[2025-11-15 15:59:27] Mutation detected: create nm-30
+[2025-11-15 15:59:27] Mutation detected: update nm-30
+[2025-11-15 15:59:27] Mutation detected: create nm-31a
+[2025-11-15 15:59:27] Mutation detected: update nm-31a
+[2025-11-15 15:59:27] Mutation detected: create nm-32a
+[2025-11-15 15:59:27] Mutation detected: update nm-32a
+[2025-11-15 15:59:27] Mutation detected: create nm-33a
+[2025-11-15 15:59:27] Mutation detected: update nm-33a
+[2025-11-15 15:59:27] Mutation detected: create nm-34
+[2025-11-15 15:59:27] Mutation detected: create nm-35
+[2025-11-15 15:59:27] Mutation detected: update nm-35
+[2025-11-15 15:59:27] Mutation detected: create nm-3573
+[2025-11-15 15:59:27] Mutation detected: create nm-3573.1
+[2025-11-15 15:59:27] Mutation detected: update nm-3573.1
+[2025-11-15 15:59:27] Mutation detected: create nm-3573.2
+[2025-11-15 15:59:27] Mutation detected: update nm-3573.2
+[2025-11-15 15:59:27] Mutation detected: create nm-3573.3
+[2025-11-15 15:59:28] Mutation detected: create nm-3573.4
+[2025-11-15 15:59:28] Mutation detected: create nm-3573.5
+[2025-11-15 15:59:28] Mutation detected: create nm-5
+[2025-11-15 15:59:28] Mutation detected: update nm-5
+[2025-11-15 15:59:28] Mutation detected: create nm-50d6
+[2025-11-15 15:59:28] Mutation detected: update nm-50d6
+[2025-11-15 15:59:28] Mutation detected: create nm-6
+[2025-11-15 15:59:28] Mutation detected: update nm-6
+[2025-11-15 15:59:28] Mutation detected: create nm-7
+[2025-11-15 15:59:28] Mutation detected: update nm-7
+[2025-11-15 15:59:28] Mutation detected: create nm-7f30
+[2025-11-15 15:59:28] Mutation detected: create nm-9
+[2025-11-15 15:59:28] Mutation detected: update nm-9
+[2025-11-15 15:59:29] Export triggered by mutation events
+[2025-11-15 15:59:29] Starting export...
+[2025-11-15 15:59:29] Pre-export validation failed: refusing to export: JSONL is newer than database (import first to avoid data loss)
+[2025-11-15 15:59:35] Parent process (PID 1) died, shutting down daemon
+[2025-11-15 15:59:35] Daemon started (interval: 5s, auto-commit: false, auto-push: false)
+[2025-11-15 15:59:35] Using database: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:59:36] Database opened: /Users/ben/code/neumann/.beads/beads.db
+[2025-11-15 15:59:36] Repository fingerprint validated: 8fc220ea
+[2025-11-15 15:59:36] Starting RPC server: /Users/ben/code/neumann/.beads/bd.sock
+[2025-11-15 15:59:36] RPC server ready (socket listening)
+[2025-11-15 15:59:36] Registered in global registry
+[2025-11-15 15:59:36] Starting sync cycle...
+[2025-11-15 15:59:36] Exported to JSONL
+[2025-11-15 15:59:37] Pulled from remote
+[2025-11-15 15:59:37] Imported from JSONL
+[2025-11-15 15:59:37] Sync cycle complete
+[2025-11-15 15:59:37] Monitoring parent process (PID 1)
+[2025-11-15 15:59:37] Using event-driven mode
+[2025-11-15 15:59:41] JSONL removed/renamed, re-establishing watch
+[2025-11-15 15:59:41] Successfully re-established JSONL watch after 50ms
+[2025-11-15 15:59:41] JSONL file created: /Users/ben/code/neumann/.beads/beads.base.jsonl
+[2025-11-15 15:59:42] Import triggered by file change
+[2025-11-15 15:59:42] Starting auto-import...
+[2025-11-15 15:59:43] Pulled from remote
+[2025-11-15 15:59:43] Imported from JSONL
+[2025-11-15 15:59:43] Auto-import complete
+[2025-11-15 15:59:47] Parent process (PID 1) died, shutting down daemon

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import random
 import time
 from collections.abc import Callable
@@ -24,6 +25,28 @@ _EXT_TO_LANGUAGE = {
     ".go": "go",
     ".java": "java",
 }
+
+
+def _compute_summary_word_bounds(source_words: int) -> tuple[int, int, int]:
+    """Compute adaptive (min, max, target) bounds for the summary length."""
+
+    safe_source_words = max(source_words, 20)
+    dynamic_min = math.ceil(safe_source_words * 0.4)
+    dynamic_max = math.ceil(safe_source_words * 0.75)
+
+    base_min = 120
+    base_max = 420
+
+    min_words = max(base_min, min(dynamic_min, base_max - 160))
+    max_words = min(base_max, max(min_words + 140, dynamic_max, 260))
+
+    # Choose a target near the middle of the allowed range
+    target_words = min(
+        max_words - 20,
+        max(min_words + 60, math.ceil(safe_source_words * 0.55)),
+    )
+
+    return min_words, max_words, target_words
 
 
 def generate_doc_id_from_path(source_path: str) -> str:
@@ -66,24 +89,31 @@ class LLMStructuredSummary(BaseModel):
     suggested_queries: list[str] = Field(default_factory=list)
 
 
-def _build_system_prompt() -> str:
+def _build_system_prompt(target_words: int, min_words: int, max_words: int) -> str:
     """Build the system prompt for OpenAI structured summarization."""
     return (
-        "You are a retrieval-oriented summarizer. Produce a concise 200-400 word markdown summary "
-        "covering purpose, key functionality, patterns, API symbols, and related context. "
+        "You are a retrieval-oriented summarizer. Produce a concise markdown summary covering "
+        "purpose, key functionality, patterns, API symbols, and related context. "
+        f"Aim for about {target_words} words, and stay between {min_words} and {max_words} words. "
         "Also provide metadata: product_tags, key_topics, api_symbols, related_files, suggested_queries."
     )
 
 
-def _build_user_prompt(source_path: str, language: str, text: str) -> str:
+def _build_user_prompt(
+    source_path: str,
+    language: str,
+    text: str,
+    min_words: int,
+    max_words: int,
+) -> str:
     """Build the user prompt for OpenAI structured summarization."""
     return f"""Source: {source_path}
 Language: {language}
 
-Please summarize this file. Your response must be 200-400 words.
+Please summarize this file. Your response must stay between {min_words} and {max_words} words.
 
 Return your response as a JSON object with exactly these fields:
-- summary_md: string (the 200-400 word markdown summary)
+- summary_md: string (the markdown summary in {min_words}-{max_words} words)
 - product_tags: array of strings (optional)
 - key_topics: array of strings (optional)
 - api_symbols: array of strings (optional)
@@ -101,7 +131,10 @@ def _openai_structured_summary(
     language: str,
     text: str,
     *,
-    model: str = "gpt-4o-mini",
+    min_words: int,
+    max_words: int,
+    target_words: int,
+    model: str = config.SUMMARY_MODEL,
     max_retries: int = 3,
     base_delay: float = 1.0,
 ) -> LLMStructuredSummary:
@@ -137,8 +170,8 @@ def _openai_structured_summary(
         },
     }
 
-    system_prompt = _build_system_prompt()
-    user_prompt = _build_user_prompt(source_path, language, text)
+    system_prompt = _build_system_prompt(target_words, min_words, max_words)
+    user_prompt = _build_user_prompt(source_path, language, text, min_words, max_words)
 
     # Retry loop with exponential backoff
     last_error: Exception | None = None
@@ -148,7 +181,9 @@ def _openai_structured_summary(
             # Use Chat Completions API with structured outputs
             # Try json_schema first (preferred, strict validation)
             # Note: json_schema requires specific models (e.g., gpt-4o, gpt-4-turbo)
-            # For gpt-4o-mini, fall back to json_object
+            # For models that don't support json_schema (e.g., gpt-4o-mini), fall back to json_object
+            # The fallback is automatic: if json_schema fails with an APIError, we catch it and retry
+            # with response_format={"type": "json_object"} which is more widely supported
             try:
                 resp = client.chat.completions.create(
                     model=model,
@@ -258,34 +293,54 @@ def summarize_file(
     Args:
         source_path: Path to the source file
         text: File content to summarize
-        llm_generate_markdown: Optional callable that returns a markdown body (200–400 words).
-            If None, uses OpenAI structured output. Tests can inject custom generators.
+        llm_generate_markdown: Optional callable that returns a markdown body. If None, uses
+            OpenAI structured output. Tests can inject custom generators.
 
     Returns:
         FileSummary with validated front_matter and summary_md
 
     Raises:
-        ValidationError: If summary_md word count is out of range (200-400 words)
+        ValidationError: If summary_md word count falls outside the configured range
     """
     doc_id = generate_doc_id_from_path(source_path)
     language = detect_language_from_extension(source_path)
+    source_word_count = len([w for w in text.split() if w])
+    min_words, max_words, target_words = _compute_summary_word_bounds(source_word_count)
 
     if llm_generate_markdown is not None:
         # Test/mock path - use callback
         generator = llm_generate_markdown
-        system_prompt = (
-            "You are a retrieval-oriented summarizer. Produce a concise 200-400 word markdown summary "
-            "covering purpose, key functionality, patterns, API symbols, and related context."
+        prompt = (
+            _build_system_prompt(target_words, min_words, max_words)
+            + "\n\n"
+            + _build_user_prompt(
+                source_path,
+                language,
+                text,
+                min_words,
+                max_words,
+            )
         )
-        body_md = generator(system_prompt + "\n\n" + text)
+        body_md = generator(prompt)
         front_matter = SummaryFrontMatter(
             doc_id=doc_id,
             source_path=source_path,
             language=language,
+            source_word_count=source_word_count,
+            min_summary_words=min_words,
+            max_summary_words=max_words,
+            target_summary_words=target_words,
         )
     else:
         # Production path - use OpenAI structured output
-        llm_out = _openai_structured_summary(source_path, language, text)
+        llm_out = _openai_structured_summary(
+            source_path,
+            language,
+            text,
+            min_words=min_words,
+            max_words=max_words,
+            target_words=target_words,
+        )
         front_matter = SummaryFrontMatter(
             doc_id=doc_id,
             source_path=source_path,
@@ -295,6 +350,10 @@ def summarize_file(
             api_symbols=llm_out.api_symbols,
             related_files=llm_out.related_files,
             suggested_queries=llm_out.suggested_queries,
+            source_word_count=source_word_count,
+            min_summary_words=min_words,
+            max_summary_words=max_words,
+            target_summary_words=target_words,
         )
         body_md = llm_out.summary_md
 

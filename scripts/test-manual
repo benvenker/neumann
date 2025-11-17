@@ -1,0 +1,29 @@
+#!/bin/bash
+# Run manual tests with proper environment variable handling.
+# Ensures project .env files take precedence over global exports.
+#
+# Usage:
+#   scripts/test-manual tests/manual/test_summarization.py
+#   scripts/test-manual tests/manual/test_api_quick.py
+#   scripts/test-manual tests/manual/test_*.py  # All manual tests
+
+set -e
+
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+# Unset global OPENAI_API_KEY so config loads from project .env
+# This is critical: pydantic-settings loads env vars BEFORE .env files
+unset OPENAI_API_KEY
+
+# Activate virtual environment if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
+# Run the test script(s) with Python
+exec python3 "$@"
+
