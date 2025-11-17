@@ -275,3 +275,33 @@ def test_semantic_search_metadata_normalization(tmp_path: Path) -> None:
     # Verify top-level page_uris is also a list
     assert isinstance(results[0]["page_uris"], list)
     assert results[0]["page_uris"] == ["uri1", "uri2"]
+
+
+def test_semantic_search_nonstring_doc_id(tmp_path: Path) -> None:
+    """Test that non-string doc_id values in metadata are converted to strings."""
+    client = get_client(str(tmp_path / "chroma"))
+    fake_embed = fake_embedding_function()
+
+    # Insert a summary with integer doc_id in metadata
+    count = upsert_summaries(
+        [
+            {
+                "id": "doc1",
+                "document": "This is a test document about web scraping",
+                "metadata": {
+                    "doc_id": 67890,  # Integer instead of string
+                    "source_path": "src/scraper.py",
+                    "language": "python",
+                },
+            },
+        ],
+        client=client,
+        embedding_function=fake_embed,
+    )
+    assert count == 1
+
+    results = semantic_search("web scraping", k=1, client=client, embedding_function=fake_embed)
+    assert len(results) == 1
+    # Verify doc_id is converted to string
+    assert results[0]["doc_id"] == "67890"
+    assert isinstance(results[0]["doc_id"], str)

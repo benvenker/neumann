@@ -506,6 +506,7 @@ def lexical_search(
         meta = metadatas[i] if metadatas and i < len(metadatas) else {}
         meta_dict = meta or {}
         doc_id = meta_dict.get("doc_id") or id_
+        doc_id = str(doc_id)
         source_path = meta_dict.get("source_path")
         line_start = meta_dict.get("line_start")
         line_end = meta_dict.get("line_end")
@@ -669,6 +670,7 @@ def semantic_search(
     for i in range(len(ids0)):
         meta = metas0[i] or {}
         doc_id = meta.get("doc_id") or ids0[i]
+        doc_id = str(doc_id)
         source_path = meta.get("source_path")
         page_uris = _parse_meta_list(meta.get("page_uris"))
 
