@@ -73,7 +73,9 @@ def test_hybrid_search_keyword_args():
             return False
     else:
         logger.info("⚠ OpenAI key not available - skipping semantic search test")
-        logger.info("  (This is expected if OPENAI_API_KEY is not set)")
+        logger.info(
+            "  (Update .env or prefix the command with OPENAI_API_KEY=… and recreate tmux sessions after edits)"
+        )
 
     # Test lexical-only search path (no OpenAI key needed)
     logger.info("\n1.2 Testing lexical-only search path...")

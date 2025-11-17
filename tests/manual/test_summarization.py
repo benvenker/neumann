@@ -163,7 +163,9 @@ if __name__ == "__main__":
     from config import config
 
     if not config.has_openai_key:
-        logger.warning("⚠️  OPENAI_API_KEY not set - will fail when calling OpenAI")
+        logger.warning("⚠️  OPENAI_API_KEY not set - summarization calls will fail")
+        logger.warning("  Add OPENAI_API_KEY to .env (or prefix this command) before rerunning.")
+        logger.warning("  Remember to recreate tmux sessions after editing .env so the key is visible.")
     else:
         logger.info("✓ OPENAI_API_KEY configured")
 

@@ -37,6 +37,9 @@ def test_summarize_generates_valid_summary(tmp_path: Path) -> None:
     content = p.read_text(encoding="utf-8")
     assert content.startswith("---\n")
     assert "doc_id:" in content and "language: python" in content
+    assert fs.front_matter.min_summary_words is not None
+    assert fs.front_matter.max_summary_words is not None
+    assert fs.front_matter.source_word_count is not None
 
 
 def test_summarize_raises_on_short_body() -> None:
@@ -44,7 +47,7 @@ def test_summarize_raises_on_short_body() -> None:
     text = "Some content"
 
     def short_llm(_: str) -> str:
-        return make_body(120)
+        return make_body(60)
 
     import pytest
 

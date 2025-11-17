@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 
 dependencies = [
-    "weasyprint>=62.3,<63",
+    "weasyprint>=66.0,<67",
     "pygments>=2.18.0,<3",
     "markdown>=3.6,<4",
     "pymupdf>=1.24.8,<2",
@@ -22,6 +22,8 @@ dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "tqdm>=4.66.0,<5",
+    "fastapi>=0.115.0,<0.116",
+    "uvicorn[standard]>=0.30,<0.31",
 ]
 
 [project.optional-dependencies]
@@ -57,6 +59,7 @@ select = [
 ]
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "B008",  # function call in argument defaults (required for FastAPI Depends)
 ]
 
 [tool.ruff.format]
