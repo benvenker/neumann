@@ -22,6 +22,10 @@ build/
 *.swo
 *~
 
+# Agents
+.codex/
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -73,4 +77,8 @@ chroma_data/
 test_output/
 
 # Beads local tracker
-.beads/
+.beads/beads.db
+.beads/beads.db-*
+.beads/bd.sock
+.beads/bd.pipe
+.beads/.exclusive-lock

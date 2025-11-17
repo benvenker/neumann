@@ -118,8 +118,7 @@ def test_summarization(test_data_dir: Path, output_dir: Path, limit: int | None 
             if output_path.exists():
                 file_time = time.time() - file_start
                 logger.info(
-                    f"✓ Saved: {output_path.name} "
-                    f"(doc_id={summary.front_matter.doc_id}, {file_time:.2f}s total)"
+                    f"✓ Saved: {output_path.name} (doc_id={summary.front_matter.doc_id}, {file_time:.2f}s total)"
                 )
                 if summary.front_matter.key_topics:
                     topics_preview = ", ".join(summary.front_matter.key_topics[:3])
@@ -144,7 +143,7 @@ def test_summarization(test_data_dir: Path, output_dir: Path, limit: int | None 
     logger.info(f"✅ Successfully summarized: {success_count}/{len(files)} files")
     if error_count > 0:
         logger.warning(f"❌ Errors: {error_count} files")
-    logger.info(f"⏱️  Total time: {total_time:.2f}s ({total_time/len(files):.2f}s per file)")
+    logger.info(f"⏱️  Total time: {total_time:.2f}s ({total_time / len(files):.2f}s per file)")
     logger.info(f"📁 Output directory: {output_dir}")
 
 

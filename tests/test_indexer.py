@@ -59,5 +59,3 @@ def test_persistence_across_restarts(tmp_path: Path) -> None:
     summaries, code = get_collections(c2)
     assert summaries.name == "search_summaries"
     assert code.name == "search_code"
-
-

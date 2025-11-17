@@ -59,12 +59,9 @@ def setup_logging(output_file: Path | None = None) -> logging.Logger:
         # Ensure parent directory exists
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        file_handler = logging.FileHandler(output_file, mode='w', encoding='utf-8')
+        file_handler = logging.FileHandler(output_file, mode="w", encoding="utf-8")
         file_handler.setLevel(logging.INFO)
-        file_formatter = logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
+        file_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
 
@@ -92,18 +89,20 @@ def index_test_file(file_path: Path, client, output_root: Path) -> int:
     items = []
     for i, chunk in enumerate(chunks):
         chunk_id = f"{doc_id}:chunk_{i:03d}"
-        items.append({
-            "id": chunk_id,
-            "document": chunk["text"],
-            "metadata": {
-                "doc_id": doc_id,
-                "source_path": str(file_path),
-                "lang": file_path.suffix.lstrip("."),
-                "line_start": chunk["line_start"],
-                "line_end": chunk["line_end"],
-                "page_uris": "",
+        items.append(
+            {
+                "id": chunk_id,
+                "document": chunk["text"],
+                "metadata": {
+                    "doc_id": doc_id,
+                    "source_path": str(file_path),
+                    "lang": file_path.suffix.lstrip("."),
+                    "line_start": chunk["line_start"],
+                    "line_end": chunk["line_end"],
+                    "page_uris": "",
+                },
             }
-        })
+        )
 
     count = upsert_code_chunks(items, client=client)
     logger.info(f"   ✓ Indexed {count} chunks\n")
@@ -127,18 +126,14 @@ def print_result(result: dict, index: int) -> None:
 
 def test_case_1_regex_scoring(client):
     """Test 1: Regex scoring with multiple matches shows ordering by tie-breakers."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 1: Regex Scoring & Tie-Breakers")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: regex 'const\\s+' (should find multiple matches)")
     logger.info("Expected: Files with more regex matches rank higher")
     logger.info("         Tie-breakers: categories → raw_hits → doc_len")
 
-    results = lexical_search(
-        regexes=[r"const\s+"],
-        k=10,
-        client=client
-    )
+    results = lexical_search(regexes=[r"const\s+"], k=10, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -151,18 +146,13 @@ def test_case_1_regex_scoring(client):
 
 def test_case_2_term_and_regex_combined(client):
     """Test 2: Combined term + regex search with AND logic."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 2: Combined Term + Regex (AND)")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info(r"Query: must_terms=['function'] + regexes=[r'export\s+']")
     logger.info("Expected: Only chunks containing BOTH 'function' AND matching regex")
 
-    results = lexical_search(
-        must_terms=["function"],
-        regexes=[r"export\s+"],
-        k=10,
-        client=client
-    )
+    results = lexical_search(must_terms=["function"], regexes=[r"export\s+"], k=10, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -177,18 +167,14 @@ def test_case_2_term_and_regex_combined(client):
 
 def test_case_3_path_filtering_with_fetch_multiplier(client):
     """Test 3: Path filtering uses fetch multiplier for better recall."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 3: Path Filtering with Fetch Multiplier")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: path_like='components' (client-side filtering)")
     logger.info("Expected: Finds results in components/ directory")
     logger.info("         Uses k×10 fetch limit for better recall")
 
-    results = lexical_search(
-        path_like="components",
-        k=5,
-        client=client
-    )
+    results = lexical_search(path_like="components", k=5, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -201,18 +187,14 @@ def test_case_3_path_filtering_with_fetch_multiplier(client):
 
 def test_case_4_metadata_normalization(client):
     """Test 4: Metadata normalization symmetry with semantic_search."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 4: Metadata Normalization")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: any search to check metadata structure")
     logger.info("Expected: Results include normalized 'metadata' dict with")
     logger.info("         language, last_updated, and list-like fields parsed")
 
-    results = lexical_search(
-        must_terms=["import"],
-        k=3,
-        client=client
-    )
+    results = lexical_search(must_terms=["import"], k=3, client=client)
 
     logger.info(f"\n📊 Checking metadata in {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -230,19 +212,14 @@ def test_case_4_metadata_normalization(client):
 
 def test_case_5_rich_why_signals(client):
     """Test 5: Rich 'why' signals with match counts from metrics."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 5: Rich Why Signals with Match Counts")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: must_terms=['const'] + regexes=[r'\\w+\\s*=']")
     logger.info("Expected: 'why' signals show match counts (xN)")
     logger.info("         Counts come from metrics, not re-counting")
 
-    results = lexical_search(
-        must_terms=["const"],
-        regexes=[r"\w+\s*="],
-        k=5,
-        client=client
-    )
+    results = lexical_search(must_terms=["const"], regexes=[r"\w+\s*="], k=5, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -257,21 +234,17 @@ def test_case_5_rich_why_signals(client):
 
 def test_case_6_lexical_scoring_with_caps(client):
     """Test 6: Lexical scoring respects caps (terms/regex don't dominate)."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 6: Lexical Scoring with Caps")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: must_terms=['import'] (find files with many imports)")
     logger.info("Expected: Scores capped at 3 per term to prevent domination")
     logger.info("         Files with 1-3 imports score similar to 10+ imports")
 
-    results = lexical_search(
-        must_terms=["import"],
-        k=5,
-        client=client
-    )
+    results = lexical_search(must_terms=["import"], k=5, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results (sorted by score):\n")
-    prev_score = float('inf')
+    prev_score = float("inf")
     for i, r in enumerate(results, 1):
         print_result(r, i)
         score = r["score"]
@@ -285,18 +258,14 @@ def test_case_6_lexical_scoring_with_caps(client):
 
 def test_case_7_path_only_baseline(client):
     """Test 7: Path-only queries get baseline score for hybrid fusion."""
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("TEST 7: Path-Only Baseline")
-    logger.info("="*70)
+    logger.info("=" * 70)
     logger.info("Query: path_like='components' (no terms/regex)")
     logger.info("Expected: Results get LEX_PATH_ONLY_BASELINE (0.25) score")
     logger.info("         'why' includes 'path-only match baseline applied'")
 
-    results = lexical_search(
-        path_like="components",
-        k=5,
-        client=client
-    )
+    results = lexical_search(path_like="components", k=5, client=client)
 
     logger.info(f"\n📊 Found {len(results)} results:\n")
     for i, r in enumerate(results, 1):
@@ -356,8 +325,7 @@ def main() -> int:
     logger.info("-" * 70)
 
     text_extensions = {".py", ".ts", ".tsx", ".js", ".jsx", ".css", ".md"}
-    files = sorted([f for f in test_data_dir.rglob("*")
-                    if f.is_file() and f.suffix.lower() in text_extensions])
+    files = sorted([f for f in test_data_dir.rglob("*") if f.is_file() and f.suffix.lower() in text_extensions])
 
     # Limit to a good selection for testing
     test_files = []
@@ -382,9 +350,9 @@ def main() -> int:
     logger.info(f"✓ Total: {total_chunks} chunks indexed")
 
     # Run test cases
-    logger.info("\n" + "="*70)
+    logger.info("\n" + "=" * 70)
     logger.info("🔍 Running Test Cases")
-    logger.info("="*70)
+    logger.info("=" * 70)
 
     try:
         test_case_1_regex_scoring(client)
@@ -395,9 +363,9 @@ def main() -> int:
         test_case_6_lexical_scoring_with_caps(client)
         test_case_7_path_only_baseline(client)
 
-        logger.info("\n" + "="*70)
+        logger.info("\n" + "=" * 70)
         logger.info("✅ All tests completed successfully!")
-        logger.info("="*70)
+        logger.info("=" * 70)
         logger.info(f"📁 ChromaDB data: {chroma_path}")
         logger.info(f"📝 Output log: {output_file}")
         logger.info("💡 You can inspect the ChromaDB to verify indexing")

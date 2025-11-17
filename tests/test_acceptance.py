@@ -141,9 +141,9 @@ def acceptance_ingested(tmp_path_factory, acceptance_corpus: Path) -> dict[str, 
 @pytest.mark.acceptance
 def test_corpus_ingestion_metrics(acceptance_ingested: dict[str, Any]) -> None:
     """Validate corpus was ingested successfully."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 1: Corpus Ingestion Metrics")
-    print("="*70)
+    print("=" * 70)
 
     doc_count = acceptance_ingested["doc_count"]
     chunk_count = acceptance_ingested["chunk_count"]
@@ -164,9 +164,9 @@ def test_nl_query_chat_api(acceptance_ingested: dict[str, Any]) -> None:
     if not config.has_openai_key:
         pytest.skip("OPENAI_API_KEY not configured")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 2: NL Query - Chat API Streaming")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
     query = "How to implement chat API with streaming in Next.js?"
@@ -176,7 +176,7 @@ def test_nl_query_chat_api(acceptance_ingested: dict[str, Any]) -> None:
     latency = time.time() - start
 
     print(f"Query: '{query}'")
-    print(f"Latency: {latency*1000:.1f}ms")
+    print(f"Latency: {latency * 1000:.1f}ms")
     print(f"Results: {len(results)}\n")
 
     for i, r in enumerate(results[:5], 1):
@@ -198,9 +198,9 @@ def test_nl_query_chroma_embeddings(acceptance_ingested: dict[str, Any]) -> None
     if not config.has_openai_key:
         pytest.skip("OPENAI_API_KEY not configured")
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 3: NL Query - ChromaDB Embeddings")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
     query = "What are ChromaDB collections and embeddings?"
@@ -210,7 +210,7 @@ def test_nl_query_chroma_embeddings(acceptance_ingested: dict[str, Any]) -> None
     latency = time.time() - start
 
     print(f"Query: '{query}'")
-    print(f"Latency: {latency*1000:.1f}ms")
+    print(f"Latency: {latency * 1000:.1f}ms")
     print(f"Results: {len(results)}\n")
 
     for i, r in enumerate(results[:5], 1):
@@ -228,9 +228,9 @@ def test_nl_query_chroma_embeddings(acceptance_ingested: dict[str, Any]) -> None
 @pytest.mark.acceptance
 def test_exact_term_export(acceptance_ingested: dict[str, Any]) -> None:
     """Exact term query: 'export' (common in TS files)."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 4: Exact Term Query - 'export'")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
 
@@ -239,7 +239,7 @@ def test_exact_term_export(acceptance_ingested: dict[str, Any]) -> None:
     latency = time.time() - start
 
     print("Query: must_terms=['export']")
-    print(f"Latency: {latency*1000:.1f}ms")
+    print(f"Latency: {latency * 1000:.1f}ms")
     print(f"Results: {len(results)}\n")
 
     for i, r in enumerate(results[:5], 1):
@@ -259,9 +259,9 @@ def test_exact_term_export(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_exact_term_collection(acceptance_ingested: dict[str, Any]) -> None:
     """Exact term query: 'collection' (common in chroma docs)."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 5: Exact Term Query - 'collection'")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
 
@@ -270,7 +270,7 @@ def test_exact_term_collection(acceptance_ingested: dict[str, Any]) -> None:
     latency = time.time() - start
 
     print("Query: must_terms=['collection']")
-    print(f"Latency: {latency*1000:.1f}ms")
+    print(f"Latency: {latency * 1000:.1f}ms")
     print(f"Results: {len(results)}\n")
 
     for i, r in enumerate(results[:5], 1):
@@ -284,9 +284,9 @@ def test_exact_term_collection(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_regex_query_const(acceptance_ingested: dict[str, Any]) -> None:
     """Regex query: \\bconst\\b (TypeScript constants)."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 6: Regex Query - \\bconst\\b")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
 
@@ -295,7 +295,7 @@ def test_regex_query_const(acceptance_ingested: dict[str, Any]) -> None:
     latency = time.time() - start
 
     print("Query: regexes=[r'\\bconst\\b']")
-    print(f"Latency: {latency*1000:.1f}ms")
+    print(f"Latency: {latency * 1000:.1f}ms")
     print(f"Results: {len(results)}\n")
 
     for i, r in enumerate(results[:5], 1):
@@ -317,9 +317,9 @@ def test_regex_query_const(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_query_latency_statistics(acceptance_ingested: dict[str, Any]) -> None:
     """Measure query latency statistics across multiple queries."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 7: Query Latency Statistics")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
     latencies: list[float] = []
@@ -348,9 +348,9 @@ def test_query_latency_statistics(acceptance_ingested: dict[str, Any]) -> None:
         p99 = max(latencies)
 
         print(f"Queries run: {len(latencies)}")
-        print(f"p50 latency: {p50*1000:.1f}ms")
-        print(f"p95 latency: {p95*1000:.1f}ms")
-        print(f"p99 latency: {p99*1000:.1f}ms")
+        print(f"p50 latency: {p50 * 1000:.1f}ms")
+        print(f"p95 latency: {p95 * 1000:.1f}ms")
+        print(f"p99 latency: {p99 * 1000:.1f}ms")
 
         assert p95 < 1.0, f"p95 latency {p95:.2f}s exceeded 1s threshold"
         print("\n✓ Latency within acceptable range")
@@ -359,9 +359,9 @@ def test_query_latency_statistics(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_uri_validation(acceptance_ingested: dict[str, Any]) -> None:
     """Verify URIs in pages.jsonl are valid and resolvable."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 8: URI Validation")
-    print("="*70)
+    print("=" * 70)
 
     out_dir = acceptance_ingested["out_dir"]
 
@@ -390,14 +390,15 @@ def test_uri_validation(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_chunk_size_compliance(acceptance_ingested: dict[str, Any]) -> None:
     """Verify all chunks are < 16KB (Chroma Cloud compatible)."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 9: Chunk Size Compliance (<16KB)")
-    print("="*70)
+    print("=" * 70)
 
     client = acceptance_ingested["client"]
 
     # Query to get all chunks
     from indexer import get_collections
+
     _, code_collection = get_collections(client)
 
     # Sample 100 chunks to check size
@@ -425,9 +426,9 @@ def test_chunk_size_compliance(acceptance_ingested: dict[str, Any]) -> None:
 @pytest.mark.acceptance
 def test_acceptance_report_generation(acceptance_ingested: dict[str, Any]) -> None:
     """Generate acceptance results report."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("TEST 10: Generate Acceptance Report")
-    print("="*70)
+    print("=" * 70)
 
     project_root = Path(__file__).parent.parent
     report_path = project_root / "docs" / "acceptance_results.md"
@@ -441,6 +442,7 @@ def test_acceptance_report_generation(acceptance_ingested: dict[str, Any]) -> No
 
     # Calculate index size
     import os
+
     def get_dir_size(path: Path) -> int:
         total = 0
         for entry in path.rglob("*"):

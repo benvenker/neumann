@@ -91,4 +91,3 @@ def test_normalized_meta_list_keys_constant():
         "page_uris",
     }
     assert set(NORMALIZED_META_LIST_KEYS) == expected
-

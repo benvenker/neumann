@@ -168,13 +168,13 @@ def _build_where_document(must_terms: list[str] | None, regexes: list[str] | Non
     terms_group: dict[str, Any] | None = (
         {"$contains": terms[0]}
         if terms and len(terms) == 1
-        else {"$and": [{"$contains": t} for t in terms]} if terms else None
+        else {"$and": [{"$contains": t} for t in terms]}
+        if terms
+        else None
     )
 
     regex_group: dict[str, Any] | None = (
-        {"$regex": regs[0]}
-        if regs and len(regs) == 1
-        else {"$or": [{"$regex": r} for r in regs]} if regs else None
+        {"$regex": regs[0]} if regs and len(regs) == 1 else {"$or": [{"$regex": r} for r in regs]} if regs else None
     )
 
     if terms_group and regex_group:
@@ -290,9 +290,7 @@ def _compute_lexical_score(
     )
 
 
-def _filters_satisfied(
-    metrics: LexicalMetrics, terms: list[str], compiled: list[tuple[Pattern[str], str]]
-) -> bool:
+def _filters_satisfied(metrics: LexicalMetrics, terms: list[str], compiled: list[tuple[Pattern[str], str]]) -> bool:
     """Check if lexical filter semantics are satisfied based on metrics.
 
     Returns True if:
@@ -638,11 +636,7 @@ def semantic_search(
 
     # Embed query using provided function or default embed_texts
     try:
-        vecs = (
-            embed_texts([q])
-            if embedding_function is None
-            else embedding_function([q])
-        )
+        vecs = embed_texts([q]) if embedding_function is None else embedding_function([q])
     except Exception as e:
         error_msg = str(e)
         if "OPENAI_API_KEY" in error_msg or "api key" in error_msg.lower():
@@ -805,11 +799,7 @@ def hybrid_search(
         lex_score = float((lex_match or {}).get("score") or 0.0)
 
         # Combined score: weighted sum if both present, else single-channel
-        combined = (
-            w_semantic * sem_score + w_lexical * lex_score
-            if sem_match and lex_match
-            else sem_score or lex_score
-        )
+        combined = w_semantic * sem_score + w_lexical * lex_score if sem_match and lex_match else sem_score or lex_score
 
         # Merge fields (prefer lexical for granular details)
         source_path = (lex_match or {}).get("source_path") or (sem_match or {}).get("source_path")

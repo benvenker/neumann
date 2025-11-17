@@ -15,6 +15,7 @@ def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], 
     Returns:
         Callable that returns deterministic embeddings based on text hash
     """
+
     def embed(texts: Sequence[str]) -> list[list[float]]:
         embeddings = []
         for text in texts:
@@ -26,6 +27,7 @@ def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], 
             vec = [float((hash_val + i) % 100) / 100.0 for i in range(dimension)]
             embeddings.append(vec)
         return embeddings
+
     return embed
 
 
@@ -190,9 +192,7 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
     assert count == 3
 
     # Search with query embedding close to doc1
-    results = semantic_search(
-        "python web scraping", k=3, client=client, embedding_function=query_embed
-    )
+    results = semantic_search("python web scraping", k=3, client=client, embedding_function=query_embed)
 
     assert len(results) >= 1, "Should return at least one result"
 
@@ -202,7 +202,9 @@ def test_semantic_search_sorts_by_relevance(tmp_path: Path) -> None:
 
     # Verify scores decrease monotonically (or stay equal)
     for i in range(len(scores) - 1):
-        assert scores[i] >= scores[i + 1], f"Score at index {i} ({scores[i]}) should be >= score at index {i+1} ({scores[i+1]})"
+        assert scores[i] >= scores[i + 1], (
+            f"Score at index {i} ({scores[i]}) should be >= score at index {i + 1} ({scores[i + 1]})"
+        )
 
     # Verify doc1 has highest score (should be first or among top results)
     # Note: Exact ordering depends on Chroma's distance calculation, but scores should be ordered

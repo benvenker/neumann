@@ -486,6 +486,7 @@ def render_file(src_path: pathlib.Path, out_root: pathlib.Path, cfg: RenderConfi
     # 5) If emit=tiles only, remove pages to keep output lean
     if cfg.emit == "tiles":
         import contextlib
+
         with contextlib.suppress(Exception):
             shutil.rmtree(pages_dir)
 

@@ -55,4 +55,3 @@ def make_doc_id_from_str(source_path: str) -> str:
 
 
 __all__ = ["make_doc_id", "make_doc_id_from_str"]
-

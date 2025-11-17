@@ -157,4 +157,3 @@ def test_language_mapped_when_both_keys_present(tmp_path):
     # Lexical channel
     assert lex and lex[0]["metadata"].get("language") == "ts"
     assert "lang" not in lex[0]["metadata"]
-

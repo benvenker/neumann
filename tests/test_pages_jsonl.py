@@ -86,6 +86,7 @@ def test_dimensions_and_bytes_match_actual_files():
         on_disk = wp.stat().st_size
         assert row["bytes"] == on_disk
         from PIL import Image
+
         with Image.open(wp) as im:
             w, h = im.size
         assert row["width"] == w and row["height"] == h

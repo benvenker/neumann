@@ -553,6 +553,35 @@ Labels require explicit fetching. Use `--json` flag or `bd label list <id>`.
 ### Changes Not Syncing
 Run `bd sync` to force immediate sync. Check git hooks are installed.
 
+### If bd sync says "JSONL is newer than database"
+
+**Cause:** A recent export (often by the daemon) updated `.beads/*.jsonl` without bumping `.beads/beads.db` mtime, so the pre-export validator blocks to avoid overwriting a "newer" JSONL.
+
+**Fix:**
+
+1. Disable daemon for this shell:
+```bash
+export BEADS_NO_DAEMON=1
+export BEADS_AUTO_START_DAEMON=false
+bd daemons killall
+```
+
+2. Import the active JSONL (exclude the "left" snapshot):
+```bash
+JSONL=$(ls -t .beads/*.jsonl | grep -v 'beads.left' | head -1)
+bd import -i "$JSONL"
+```
+
+3. If needed, align timestamps (some FS granularity needs it):
+```bash
+touch .beads/beads.db; sleep 1
+```
+
+4. Run `bd sync`
+
+**Alternative: two-phase flow**
+- `bd sync --flush-only` → commit/push → `bd sync --import-only`
+
 ### Stale Sockets
 ```bash
 bd daemons list  # Auto-removes stale sockets

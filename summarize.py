@@ -310,12 +310,16 @@ def summarize_file(
     if llm_generate_markdown is not None:
         # Test/mock path - use callback
         generator = llm_generate_markdown
-        prompt = _build_system_prompt(target_words, min_words, max_words) + "\n\n" + _build_user_prompt(
-            source_path,
-            language,
-            text,
-            min_words,
-            max_words,
+        prompt = (
+            _build_system_prompt(target_words, min_words, max_words)
+            + "\n\n"
+            + _build_user_prompt(
+                source_path,
+                language,
+                text,
+                min_words,
+                max_words,
+            )
         )
         body_md = generator(prompt)
         front_matter = SummaryFrontMatter(

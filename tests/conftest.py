@@ -2,7 +2,6 @@ import os
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -20,7 +19,7 @@ class _ProgressReporter:
             self._terminal = session.config.pluginmanager.get_plugin("terminalreporter")
 
     @pytest.hookimpl
-    def pytest_runtest_logstart(self, nodeid: str, location):
+    def pytest_runtest_logstart(self, nodeid: str, _location) -> None:
         if self._terminal is None:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -32,7 +31,7 @@ class _ProgressReporter:
         if self._terminal is None or report.when != "call":
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
-        duration: Optional[float] = None
+        duration: float | None = None
         if report.nodeid in self._starts:
             duration = time.monotonic() - self._starts.pop(report.nodeid)
         duration_text = f" ({duration:.2f}s)" if duration is not None else ""

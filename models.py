@@ -38,19 +38,22 @@ class SummaryFrontMatter(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _validate_word_bounds(self) -> "SummaryFrontMatter":
+    def _validate_word_bounds(self) -> SummaryFrontMatter:
         """Validate summary word count bounds are coherent when present."""
         # Only validate when all are present
-        if self.min_summary_words is not None and self.max_summary_words is not None:
-            if self.min_summary_words > self.max_summary_words:
-                raise ValueError("min_summary_words must be <= max_summary_words")
+        if (
+            self.min_summary_words is not None
+            and self.max_summary_words is not None
+            and self.min_summary_words > self.max_summary_words
+        ):
+            raise ValueError("min_summary_words must be <= max_summary_words")
         if (
             self.min_summary_words is not None
             and self.max_summary_words is not None
             and self.target_summary_words is not None
+            and not (self.min_summary_words <= self.target_summary_words <= self.max_summary_words)
         ):
-            if not (self.min_summary_words <= self.target_summary_words <= self.max_summary_words):
-                raise ValueError("target_summary_words must be between min_summary_words and max_summary_words")
+            raise ValueError("target_summary_words must be between min_summary_words and max_summary_words")
         return self
 
 
@@ -67,13 +70,9 @@ class FileSummary(BaseModel):
         max_words = self.front_matter.max_summary_words or 400
 
         if word_count < min_words:
-            raise ValueError(
-                f"summary_md must be at least {min_words} words (got {word_count})"
-            )
+            raise ValueError(f"summary_md must be at least {min_words} words (got {word_count})")
         if word_count > max_words:
-            raise ValueError(
-                f"summary_md must be at most {max_words} words (got {word_count})"
-            )
+            raise ValueError(f"summary_md must be at most {max_words} words (got {word_count})")
         return self
 
     def to_yaml(self) -> str:

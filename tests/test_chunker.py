@@ -157,7 +157,9 @@ def test_chunk_respects_16kb_limit(tmp_path: Path):
     # Verify all chunks are <= 16KB
     for chunk in chunks:
         chunk_bytes = len(chunk["text"].encode("utf-8"))
-        assert chunk_bytes <= CHROMA_CLOUD_DOC_MAX_BYTES, f"Chunk {chunk['line_start']}-{chunk['line_end']} exceeds limit"
+        assert chunk_bytes <= CHROMA_CLOUD_DOC_MAX_BYTES, (
+            f"Chunk {chunk['line_start']}-{chunk['line_end']} exceeds limit"
+        )
 
 
 def test_page_uris_attached(tmp_path: Path):
@@ -331,7 +333,7 @@ def test_chunk_dynamic_step_size_for_byte_limited_chunks(tmp_path: Path):
         current_start = chunks[i]["line_start"]
         overlap_size = 20
         expected_start = max(1, prev_end - overlap_size + 1)
-        assert current_start <= expected_start, f"Gap detected between chunks {i-1} and {i}"
+        assert current_start <= expected_start, f"Gap detected between chunks {i - 1} and {i}"
 
 
 def test_load_page_uris_with_missing_uri_field(tmp_path: Path):

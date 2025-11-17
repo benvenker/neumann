@@ -26,7 +26,7 @@ def test_fts_contains_single_term(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -37,7 +37,7 @@ def test_fts_contains_single_term(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -64,7 +64,7 @@ def test_fts_contains_multiple_terms(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -75,7 +75,7 @@ def test_fts_contains_multiple_terms(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -101,7 +101,7 @@ def test_regex_search_single(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -127,7 +127,7 @@ def test_regex_search_multiple(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -138,7 +138,7 @@ def test_regex_search_multiple(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -163,7 +163,7 @@ def test_path_filter_client_side(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -174,7 +174,7 @@ def test_path_filter_client_side(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -200,7 +200,7 @@ def test_combined_filters(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -211,18 +211,14 @@ def test_combined_filters(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
     )
 
     results = lexical_search(
-        must_terms=["authentication"],
-        regexes=[r"secret\d+"],
-        path_like="api",
-        k=10,
-        client=client
+        must_terms=["authentication"], regexes=[r"secret\d+"], path_like="api", k=10, client=client
     )
     assert len(results) == 1
     assert results[0]["doc_id"] == "file1"
@@ -243,7 +239,7 @@ def test_k_limit_enforced(tmp_path: Path) -> None:
                 "lang": "ts",
                 "line_start": 1,
                 "line_end": 5,
-            }
+            },
         }
         for i in range(10)
     ]
@@ -282,19 +278,13 @@ def test_why_signals_include_matches(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
     )
 
-    results = lexical_search(
-        must_terms=["redirect"],
-        regexes=[r"localhost"],
-        path_like="callback",
-        k=10,
-        client=client
-    )
+    results = lexical_search(must_terms=["redirect"], regexes=[r"localhost"], path_like="callback", k=10, client=client)
 
     assert len(results) == 1
     why = results[0]["why"]
@@ -319,7 +309,7 @@ def test_invalid_regex_skipped(tmp_path: Path) -> None:
                     "lang": "ts",
                     "line_start": 1,
                     "line_end": 5,
-                }
+                },
             },
         ],
         client=client,
@@ -346,7 +336,7 @@ def test_page_uris_handled_as_string_or_list(tmp_path: Path) -> None:
                     "doc_id": "file1",
                     "source_path": "src/file1.ts",
                     "page_uris": "http://example.com/page1.webp,http://example.com/page2.webp",
-                }
+                },
             },
             {
                 "id": "chunk2",
@@ -355,7 +345,7 @@ def test_page_uris_handled_as_string_or_list(tmp_path: Path) -> None:
                     "doc_id": "file2",
                     "source_path": "src/file2.ts",
                     "page_uris": "http://example.com/page3.webp",
-                }
+                },
             },
         ],
         client=client,

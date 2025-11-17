@@ -374,13 +374,10 @@ def test_nm27_path_only_baseline_hybrid(nm27_ingested: dict[str, Any]) -> None:
 
     # Lexical score should be at least the path-only baseline
     lex_score = auth_result.get("lex_score", 0.0)
-    assert lex_score >= LEX_PATH_ONLY_BASELINE, (
-        f"Expected lex_score >= {LEX_PATH_ONLY_BASELINE}, got {lex_score}"
-    )
+    assert lex_score >= LEX_PATH_ONLY_BASELINE, f"Expected lex_score >= {LEX_PATH_ONLY_BASELINE}, got {lex_score}"
 
     # Combined score should reflect both channels
     sem_score = auth_result.get("sem_score", 0.0)
     score = auth_result.get("score", 0.0)
     # Combined should be greater than just semantic (lexical baseline contributed)
     assert score > 0.6 * sem_score, f"Expected combined score > 0.6*{sem_score}, got {score}"
-

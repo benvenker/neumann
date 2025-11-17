@@ -68,18 +68,20 @@ def index_file(file_path: Path, chroma_client, output_root: Path) -> int:
         doc_id = file_path.name.replace(".", "_")
         chunk_id = f"{doc_id}:chunk_{i:03d}"
 
-        items.append({
-            "id": chunk_id,
-            "document": chunk["text"],
-            "metadata": {
-                "doc_id": doc_id,
-                "source_path": str(file_path),
-                "lang": file_path.suffix.lstrip("."),
-                "line_start": chunk["line_start"],
-                "line_end": chunk["line_end"],
-                "page_uris": ",".join(chunk["page_uris"]) if chunk["page_uris"] else "",
+        items.append(
+            {
+                "id": chunk_id,
+                "document": chunk["text"],
+                "metadata": {
+                    "doc_id": doc_id,
+                    "source_path": str(file_path),
+                    "lang": file_path.suffix.lstrip("."),
+                    "line_start": chunk["line_start"],
+                    "line_end": chunk["line_end"],
+                    "page_uris": ",".join(chunk["page_uris"]) if chunk["page_uris"] else "",
+                },
             }
-        })
+        )
 
     # Upsert chunks
     count = upsert_code_chunks(items, client=chroma_client)
@@ -138,7 +140,7 @@ def run_searches(chroma_client):
             regexes=search["regexes"],
             path_like=search["path_like"],
             k=5,
-            client=chroma_client
+            client=chroma_client,
         )
 
         if not results:
