@@ -1,33 +1,69 @@
 # Neumann
 
-A Python CLI tool that renders Markdown and code files to PDF, then converts them to WebP page images. Pages-first by default, with optional tile generation for hybrid search applications.
+Photographic memory for AI agents.
 
-## Features
+Neumann turns your docs, code, and knowledge base into **page images + rich text chunks** that agents can actually see. It runs a full ingestion pipeline (render → summarize → chunk → embed → index) and exposes **hybrid search** over ChromaDB (semantic + lexical) so a text query can come back with:
 
-- **Multi-format support**: Markdown (.md, .markdown, .mdx) and code files (.py, .js, .ts, .go, .rs, .java, .c, .cpp, .sh, .json, .yml, .html, .css, etc.)
-- **Syntax highlighting**: Powered by Pygments with customizable color schemes
-- **High-quality rendering**: WeasyPrint for PDF generation, configurable DPI and WebP quality
-- **Pages-first philosophy**: Generates full-page WebP images by default (tiles are optional)
-- **Optional tile generation**: Split pages into overlapping tiles for efficient image search
-- **Content hashing**: SHA-256 checksums for each tile (optional)
-- **Flexible manifests**: JSONL, JSON, or TSV formats for tile metadata (optional)
-- **Compact line numbers**: Inline line numbers for code files by default (table-style also available)
+- Relevant summaries and code snippets
+- The **exact pages or tiles as images** where that content lives
+- Metadata your UI or agent can use to drive follow‑up calls
 
-## System Dependencies
+You can think of it as an opinionated “memory card” maker for agents: point it at a repo or docs directory, and it builds a searchable visual corpus you can plug into CLIs, UIs, or agent runtimes.
+
+## What Neumann Does
+
+- **Renders source → pages → tiles**
+  - Markdown, code, and more rendered to PDF and then WebP page images
+  - Optional overlapping tiles for fine‑grained visual retrieval
+- **Builds an agent‑friendly index**
+  - YAML‑front‑matter summaries
+  - Line‑based text chunks tied to pages
+  - Embeddings stored in Chroma (`search_summaries`, `search_code`)
+- **Supports hybrid search via ChromaDB**
+  - Semantic search using OpenAI embeddings
+  - Lexical/FTS search over code and text
+  - Hybrid fusion (0.6 semantic / 0.4 lexical by default)
+- **Returns images, not just text**
+  - Search results carry page and tile URIs
+  - Easy to render “filmstrips” or screenshots in your UI
+- **Ships as both CLI and API**
+  - `neumann` CLI for ingest/search/serve
+  - FastAPI scaffold under `api/` for HTTP and agent integrations
+
+Under the hood it’s still “just” a Python CLI, but the design goal is clear: **give agents photographic recall of the systems they work on.**
+
+## Core Pipeline
+
+At a high level:
+
+```text
+source files → render_to_webp.py → pages/*.webp (+ optional tiles/*.webp)
+             → summarize.py (YAML+body)
+             → chunker.py (line-based windows)
+             → embeddings.py (OpenAI)
+             → indexer.py (ChromaDB)
+             → hybrid search (semantic + lexical)
+```
+
+Downstream consumers (CLI, API, agents) never have to know about PDF, WebP, or chunking details—they just ask Neumann to ingest, then query for what they need.
+
+## Quickstart
+
+### 1. System Dependencies
 
 WeasyPrint requires Cairo, Pango, and GDK-PixBuf:
 
-### macOS
+#### macOS
 ```bash
 brew install cairo pango gdk-pixbuf libffi
 ```
 
-### Ubuntu/Debian
+#### Ubuntu/Debian
 ```bash
 sudo apt-get install libcairo2 libpango-1.0-0 libgdk-pixbuf2.0-0 libffi-dev
 ```
 
-## Installation
+### 2. Installation
 
 This project uses [uv](https://github.com/astral-sh/uv) for fast, modern Python dependency management:
 
@@ -42,7 +78,7 @@ uv pip install -e ".[dev]"
 uv pip install -e .
 ```
 
-### With direnv (recommended)
+#### With direnv (recommended)
 
 If you have [direnv](https://direnv.net/) installed, the virtual environment will activate automatically:
 
@@ -51,9 +87,31 @@ If you have [direnv](https://direnv.net/) installed, the virtual environment wil
 direnv allow
 ```
 
-## Usage
+### 3. Ingest + Search in Two Commands
 
-### CLI Overview
+Assuming you have an `OPENAI_API_KEY` in `.env` or your environment:
+
+```bash
+# 1) Ingest a docs or code directory
+neumann ingest --input-dir ./docs --out-dir ./out
+
+# 2) Ask a question, combine semantic + lexical filters
+neumann search "hybrid search" --must chroma --path-like indexer.py --k 5
+```
+
+This will:
+
+- Render documents to page images under `./out/<doc_id>/pages/`
+- Generate `.summary.md` files with YAML front matter
+- Chunk text, create embeddings, and index into ChromaDB
+- Return results that include:
+  - summary text
+  - chunk excerpts
+  - `page_uris` you can render as images in your UI
+
+For UIs or agents, you can also use the FastAPI service under `api/` (see **FastAPI Service** below).
+
+## CLI Overview
 
 Neumann provides a unified CLI with three main commands:
 
