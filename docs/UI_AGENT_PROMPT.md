@@ -27,6 +27,8 @@ The core list of results.
     "sem_score": 0.5227,
     "lex_score": 0.0,
     "rrf_score": 0.0163,
+    "lex_term_hits": 2,
+    "lex_regex_hits": 1,
     "page_uris": [
       "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p001.webp",
       "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p002.webp"
@@ -109,6 +111,8 @@ Act as an agentic coder. Break this down into:
   - **Top**: `source_path` (Mono font, truncated).
   - **Middle**: Badges for scores.
     - `Total` (Zinc-900), `Sem` (Blue-600), `Lex` (Green-600).
+    - **New**: If `lex_term_hits > 0`, show a small "Type" icon with count (e.g., 'T: 2').
+    - **New**: If `lex_regex_hits > 0`, show a small "Regex" icon with count (e.g., 'R: 1').
   - **Bottom**: The first `why` reason (e.g., "matched term 'foo'").
   - **Visual**: 48px square thumbnail of the page (use `page_uris[0]`).
 - **Active State**: Highlight selected card background (e.g., Zinc-100).
