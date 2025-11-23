@@ -19,7 +19,7 @@ class _ProgressReporter:
             self._terminal = session.config.pluginmanager.get_plugin("terminalreporter")
 
     @pytest.hookimpl
-    def pytest_runtest_logstart(self, nodeid: str, _location) -> None:
+    def pytest_runtest_logstart(self, nodeid: str, location) -> None:
         if self._terminal is None:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")

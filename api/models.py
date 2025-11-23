@@ -172,4 +172,40 @@ class HybridSearchResult(BaseSearchResult):
     rrf_score: float = 0.0
 
 
-# TODO(nm-3573.3): Add Page, Chunk, and Document models.
+class DocumentInfo(BaseModel):
+    """Summary information for a document."""
+
+    doc_id: str = Field(..., description="Unique document identifier (usually filename)")
+    source_path: str | None = Field(None, description="Relative path to source file")
+    language: str | None = None
+    last_updated: str | None = None
+
+    model_config = {"extra": "ignore"}
+
+
+class PageRecord(BaseModel):
+    """Represents a single page from pages.jsonl."""
+
+    doc_id: str
+    page: int
+    uri: str = Field(..., description="Full URI to the page asset")
+    width: int
+    height: int
+    bytes: int | None = None
+    sha256: str | None = None
+    source_file: str | None = None
+
+    model_config = {"extra": "ignore"}
+
+
+class ChunkInfo(BaseModel):
+    """Represents a text/code chunk from the index."""
+
+    chunk_id: str
+    doc_id: str
+    text: str
+    source_path: str | None = None
+    line_start: int | None = None
+    line_end: int | None = None
+
+    model_config = {"extra": "ignore"}
