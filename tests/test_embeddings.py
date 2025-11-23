@@ -6,15 +6,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 
-import embeddings
+import backend.embeddings as embeddings
 
 
 def reload_embeddings_module():
     """Reload embeddings module to reset any cached state."""
     import sys
 
-    sys.modules.pop("embeddings", None)
-    return importlib.import_module("embeddings")
+    sys.modules.pop("backend.embeddings", None)
+    return importlib.import_module("backend.embeddings")
 
 
 def test_embed_single_text():
@@ -31,7 +31,7 @@ def test_embed_single_text():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
@@ -60,7 +60,7 @@ def test_embed_batch():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
@@ -87,7 +87,7 @@ def test_vector_dimension_is_1536():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
@@ -116,12 +116,12 @@ def test_handles_rate_limit_errors():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
         # Mock time.sleep to avoid waiting
-        with patch("embeddings.time.sleep"):
+        with patch("backend.embeddings.time.sleep"):
             result = embeddings.embed_texts(["test"])
 
             assert len(result) == 1
@@ -147,11 +147,11 @@ def test_handles_timeout_errors():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
-        with patch("embeddings.time.sleep"):
+        with patch("backend.embeddings.time.sleep"):
             result = embeddings.embed_texts(["test"])
 
             assert len(result) == 1
@@ -169,7 +169,7 @@ def test_handles_api_errors():
 
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 
@@ -182,7 +182,7 @@ def test_handles_api_errors():
 
 def test_empty_list_returns_empty():
     """Test that embedding an empty list returns empty list."""
-    with patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
 
         result = embeddings.embed_texts([])
@@ -213,7 +213,7 @@ def test_large_batch_splits_automatically():
     mock_embeddings_create.side_effect = [mock_response_1, mock_response_2]
     mock_client.embeddings.create = mock_embeddings_create
 
-    with patch("embeddings.OpenAI", return_value=mock_client), patch("embeddings.config") as mock_config:
+    with patch("backend.embeddings.OpenAI", return_value=mock_client), patch("backend.embeddings.config") as mock_config:
         mock_config.require_openai = MagicMock()
         mock_config.OPENAI_API_KEY = "test-key"
 

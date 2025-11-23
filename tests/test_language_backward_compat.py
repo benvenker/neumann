@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from indexer import (
+from backend.indexer import (
     get_client,
     lexical_search,
     semantic_search,

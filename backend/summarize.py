@@ -10,9 +10,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from config import config
-from ids import make_doc_id_from_str
-from models import FileSummary, SummaryFrontMatter
+from backend.config import config
+from backend.ids import make_doc_id_from_str
+from backend.models import FileSummary, SummaryFrontMatter
 
 logger = logging.getLogger(__name__)
 

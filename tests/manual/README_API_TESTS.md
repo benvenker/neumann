@@ -13,7 +13,7 @@ These scripts provide step-by-step manual verification of the FastAPI search end
    ```bash
    # Terminal 1: Start API server
    tmux new -s neumann-api
-   uvicorn api.app:create_app --factory --reload --port 8001
+   uvicorn backend.api.app:create_app --factory --reload --port 8001
    ```
 
 3. **Configure `OPENAI_API_KEY`** (required for semantic/hybrid tests):
@@ -129,7 +129,7 @@ TEST SUMMARY: 10/10 passed
 ```bash
 # Terminal 1: Start API server
 tmux new -s neumann-api
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 
 # Detach: Ctrl+b, d
 
@@ -147,7 +147,7 @@ tmux attach -t neumann-api
 
 ```bash
 # Terminal 1:
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 
 # Terminal 2:
 python tests/manual/test_api_search_endpoints.py
@@ -165,7 +165,7 @@ python tests/manual/test_api_search_endpoints.py
 curl http://127.0.0.1:8001/healthz
 
 # Start server if needed
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 ```
 
 ### "OPENAI_API_KEY is required"

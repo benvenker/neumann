@@ -2,7 +2,7 @@ import json
 import pathlib
 import tempfile
 
-from render_to_webp import RenderConfig, render_file
+from backend.render_to_webp import RenderConfig, render_file
 
 
 def read_jsonl(path: pathlib.Path):
@@ -47,7 +47,7 @@ def test_pages_jsonl_emitted_with_required_fields():
 def test_uri_generation_format_matches_base_url():
     import re
 
-    from config import config
+    from backend.config import config
 
     with tempfile.TemporaryDirectory() as tmpdir:
         input_dir = pathlib.Path(tmpdir) / "input"

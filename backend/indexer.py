@@ -12,8 +12,8 @@ import chromadb
 from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
 
-from config import config
-from embeddings import embed_texts
+from backend.config import config
+from backend.embeddings import embed_texts
 
 logger = logging.getLogger(__name__)
 

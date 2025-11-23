@@ -20,14 +20,14 @@ from typing import Any
 
 from tqdm import tqdm
 
-from chunker import chunk_file_by_lines, load_page_uris
-from config import config
-from embeddings import embed_texts
-from ids import make_doc_id
-from indexer import get_client, get_collections, hybrid_search, upsert_code_chunks, upsert_summaries
-from models import FileSummary
-from render_to_webp import RenderConfig, discover_sources, render_file
-from summarize import detect_language_from_extension, save_summary_md, summarize_file
+from backend.chunker import chunk_file_by_lines, load_page_uris
+from backend.config import config
+from backend.embeddings import embed_texts
+from backend.ids import make_doc_id
+from backend.indexer import get_client, get_collections, hybrid_search, upsert_code_chunks, upsert_summaries
+from backend.models import FileSummary
+from backend.render_to_webp import RenderConfig, discover_sources, render_file
+from backend.summarize import detect_language_from_extension, save_summary_md, summarize_file
 
 # Constants for output formatting
 MAX_WHY_LINES = 3

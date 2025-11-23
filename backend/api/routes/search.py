@@ -9,10 +9,10 @@ import logging
 from chromadb.api import ClientAPI
 from fastapi import APIRouter, Depends, HTTPException
 
-from config import Config
-from indexer import hybrid_search as idx_hyb
-from indexer import lexical_search as idx_lex
-from indexer import semantic_search as idx_sem
+from backend.config import Config
+from backend.indexer import hybrid_search as idx_hyb
+from backend.indexer import lexical_search as idx_lex
+from backend.indexer import semantic_search as idx_sem
 
 from ..deps import get_chroma_client, get_settings
 from ..models import (

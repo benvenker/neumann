@@ -51,7 +51,7 @@ All endpoints are prefixed with `/api/v1`.
 Use `uvicorn` to run the server locally:
 ```bash
 # From project root
-uvicorn api.app:app --reload --port 8000
+uvicorn backend.api.app:app --reload --port 8000
 ```
 Or use the `tmux` session as recommended in the root `AGENTS.md`.
 

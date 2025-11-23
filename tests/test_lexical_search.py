@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from indexer import get_client, lexical_search, upsert_code_chunks
+from backend.indexer import get_client, lexical_search, upsert_code_chunks
 
 
 def test_empty_filters_returns_empty_list(tmp_path: Path) -> None:

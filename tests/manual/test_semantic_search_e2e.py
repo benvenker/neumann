@@ -24,8 +24,8 @@ import yaml
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from embeddings import embed_texts  # noqa: E402
-from indexer import get_client, semantic_search, upsert_summaries  # noqa: E402
+from backend.embeddings import embed_texts  # noqa: E402
+from backend.indexer import get_client, semantic_search, upsert_summaries  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -307,7 +307,7 @@ def main():
     logger.info(f"ChromaDB path: {chroma_path}")
 
     # Check for OPENAI_API_KEY
-    from config import config
+    from backend.config import config
 
     if not config.has_openai_key:
         logger.warning("⚠️  OPENAI_API_KEY not set - embeddings will fail")

@@ -6,7 +6,7 @@ Just checks that endpoints are reachable and return valid responses.
 
 Usage:
     # Start API server first:
-    uvicorn api.app:create_app --factory --reload --port 8001
+    uvicorn backend.api.app:create_app --factory --reload --port 8001
 
     # Run quick test:
     python tests/manual/test_api_quick.py
@@ -111,7 +111,7 @@ def main():
 
     except requests.exceptions.ConnectionError:
         print("\n✗ Cannot connect to API server")
-        print("Start with: uvicorn api.app:create_app --factory --reload --port 8001")
+        print("Start with: uvicorn backend.api.app:create_app --factory --reload --port 8001")
         return 1
 
     except AssertionError as e:

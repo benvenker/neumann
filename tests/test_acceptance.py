@@ -36,14 +36,14 @@ from typing import Any
 
 import pytest
 
-from chunker import load_page_uris
-from config import config
-from embeddings import embed_texts
-from ids import make_doc_id
-from indexer import get_client, hybrid_search, upsert_code_chunks, upsert_summaries
-from main import build_chunk_upsert_items, build_summary_upsert_item
-from render_to_webp import RenderConfig, discover_sources, render_file
-from summarize import summarize_file
+from backend.chunker import load_page_uris
+from backend.config import config
+from backend.embeddings import embed_texts
+from backend.ids import make_doc_id
+from backend.indexer import get_client, hybrid_search, upsert_code_chunks, upsert_summaries
+from backend.main import build_chunk_upsert_items, build_summary_upsert_item
+from backend.render_to_webp import RenderConfig, discover_sources, render_file
+from backend.summarize import summarize_file
 
 
 CRITICAL_SUBSET = {
@@ -61,7 +61,7 @@ CRITICAL_SUBSET = {
 @pytest.fixture(scope="module")
 def acceptance_corpus() -> Path:
     """Return path to acceptance test corpus."""
-    return Path(__file__).parent.parent / "test_data"
+    return Path(__file__).parent / "fixtures/data"
 
 
 @pytest.fixture(scope="module")
@@ -421,7 +421,7 @@ def test_chunk_size_compliance(acceptance_ingested: dict[str, Any]) -> None:
     client = acceptance_ingested["client"]
 
     # Query to get all chunks
-    from indexer import get_collections
+    from backend.indexer import get_collections
 
     _, code_collection = get_collections(client)
 

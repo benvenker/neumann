@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from ids import make_doc_id, make_doc_id_from_str
-from models import FileSummary, SummaryFrontMatter
+from backend.ids import make_doc_id, make_doc_id_from_str
+from backend.models import FileSummary, SummaryFrontMatter
 
 
 def test_doc_id_no_spaces():
@@ -35,13 +35,13 @@ def test_doc_id_from_str():
     assert " " not in doc_id
 
 
-@patch("main.hybrid_search")
-@patch("main.config")
+@patch("backend.main.hybrid_search")
+@patch("backend.main.config")
 def test_search_command_lexical_only_no_query(mock_config, mock_hybrid_search):
     """Test search works without query when lexical filters provided."""
     from argparse import Namespace
 
-    from main import cmd_search
+    from backend.main import cmd_search
 
     # Mock config: no OpenAI key
     mock_config.has_openai_key = False
@@ -79,14 +79,14 @@ def test_search_command_lexical_only_no_query(mock_config, mock_hybrid_search):
     assert call_kwargs["query"] == ""
 
 
-@patch("main.hybrid_search")
-@patch("main.config")
+@patch("backend.main.hybrid_search")
+@patch("backend.main.config")
 def test_search_command_semantic_with_fake_embeddings(mock_config, mock_hybrid_search):
     """Test search with semantic query formats output correctly."""
     from argparse import Namespace
     from io import StringIO
 
-    from main import cmd_search
+    from backend.main import cmd_search
 
     # Mock config: has OpenAI key
     mock_config.has_openai_key = True
@@ -129,12 +129,12 @@ def test_search_command_semantic_with_fake_embeddings(mock_config, mock_hybrid_s
     assert "lex=0.65" in output
 
 
-@patch("main.subprocess.Popen")
+@patch("backend.main.subprocess.Popen")
 def test_serve_command_starts_server(mock_popen):
     """Test serve command starts http.server with correct directory."""
     from argparse import Namespace
 
-    from main import cmd_serve
+    from backend.main import cmd_serve
 
     # Mock process
     mock_proc = Mock()
@@ -161,14 +161,14 @@ def test_serve_command_starts_server(mock_popen):
     assert call_args[2] == "http.server"
 
 
-@patch("main.upsert_code_chunks")
-@patch("main.upsert_summaries")
-@patch("main.get_client")
-@patch("main.render_file")
-@patch("main.summarize_file")
-@patch("main.save_summary_md")
-@patch("main.discover_sources")
-@patch("main.config")
+@patch("backend.main.upsert_code_chunks")
+@patch("backend.main.upsert_summaries")
+@patch("backend.main.get_client")
+@patch("backend.main.render_file")
+@patch("backend.main.summarize_file")
+@patch("backend.main.save_summary_md")
+@patch("backend.main.discover_sources")
+@patch("backend.main.config")
 def test_ingest_command_end_to_end_minimal(
     mock_config,
     mock_discover,
@@ -184,7 +184,7 @@ def test_ingest_command_end_to_end_minimal(
     from argparse import Namespace
     from datetime import datetime
 
-    from main import cmd_ingest
+    from backend.main import cmd_ingest
 
     # Mock config
     mock_config.has_openai_key = True
@@ -254,7 +254,7 @@ def test_ingest_command_end_to_end_minimal(
     )
 
     # Run ingest (suppress tqdm output)
-    with patch("main.tqdm"), patch("main.tqdm.write"):
+    with patch("backend.main.tqdm"), patch("backend.main.tqdm.write"):
         rc = cmd_ingest(args)
 
     assert rc == 0
@@ -265,13 +265,13 @@ def test_ingest_command_end_to_end_minimal(
     assert mock_upsert_summaries.called or mock_upsert_chunks.called
 
 
-@patch("main.hybrid_search")
-@patch("main.config")
+@patch("backend.main.hybrid_search")
+@patch("backend.main.config")
 def test_search_command_no_key_no_filters_errors(mock_config, mock_hybrid_search):
     """Test search errors gracefully when no key and no filters."""
     from argparse import Namespace
 
-    from main import cmd_search
+    from backend.main import cmd_search
 
     # Mock config: no OpenAI key
     mock_config.has_openai_key = False

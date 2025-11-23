@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from indexer import get_client, semantic_search, upsert_summaries
+from backend.indexer import get_client, semantic_search, upsert_summaries
 
 
 def fake_embedding_function(dimension: int = 1536) -> callable[[Sequence[str]], list[list[float]]]:

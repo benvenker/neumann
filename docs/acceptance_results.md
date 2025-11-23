@@ -1,12 +1,12 @@
 # Acceptance Testing Results - Neumann MVP
 
 ## Test Date
-2025-11-22 19:03:53
+2025-11-22 22:21:47
 
 ## Test Corpus
 
 - **Total files**: 8
-- **Source**: test_data/ directory
+- **Source**: tests/fixtures/data/ directory
   - 29 Next.js/React/TypeScript files
   - 25 ChromaDB documentation files
 - **Chunks indexed**: 14
@@ -14,8 +14,8 @@
 
 ## Index Metrics
 
-- **Index size on disk**: 1.65 MB
-- **ChromaDB storage**: /private/var/folders/p5/chw4_fkn6_796msg8rlj0h900000gn/T/pytest-of-ben/pytest-134/acceptance0/chroma
+- **Index size on disk**: 1.63 MB
+- **ChromaDB storage**: /private/var/folders/p5/chw4_fkn6_796msg8rlj0h900000gn/T/pytest-of-ben/pytest-136/acceptance0/chroma
 - **Chunk size compliance**: All chunks < 16KB ✓
 
 ## Test Queries

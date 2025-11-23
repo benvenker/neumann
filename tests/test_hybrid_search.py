@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 
-from indexer import (
+from backend.indexer import (
     LEX_PATH_ONLY_BASELINE,
     get_client,
     hybrid_search,

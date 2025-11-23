@@ -29,14 +29,14 @@ These protocols are **MANDATORY**. Violations will break the workflow.
 - **Protocol**: Verify paths (`ls`, `fd`) before `read_file` or `replace`.
 
 ### E. Python Environment
-- **Protocol**: YOU MUST execute all Python scripts (`pytest`, `python main.py`, etc.) within the `.venv`.
+- **Protocol**: YOU MUST execute all Python scripts (`pytest`, `python -m backend.main`, etc.) within the `.venv`.
 - **Method**: Use `source .venv/bin/activate` OR explicit `uv run`.
 - **Verify**: If `import` errors occur, check `which python` matches `.venv`.
 
 ## 2. Mission Snapshot
 - **Goal**: Convert Markdown/code into searchable visual tiles and power hybrid (text + image) search with ChromaDB.
 - **Current Milestone**: Phase 3 (API Layer Live). Web Frontend is next.
-- **Key Entry Points**: `main.py` (CLI), `api/app.py` (Backend), `render_to_webp.py` (Renderer).
+- **Key Entry Points**: `backend/main.py` (CLI), `backend/api/app.py` (Backend), `backend/render_to_webp.py` (Renderer).
 
 ## 3. Definition of Done
 Before notifying the user, ensure:
@@ -51,18 +51,19 @@ Before notifying the user, ensure:
 
 | Path                         | Purpose                                   | Agent Notes                                                               |
 | ---------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
-| `main.py`                    | Unified CLI (`ingest`, `search`, `serve`) | Orchestrates render → summarize → chunk → index.                          |
-| `render_to_webp.py`          | Rendering pipeline                        | Supports pages/tiles manifests; defaults: `emit=pages`, `manifest=none`.  |
-| `summarize.py` & `models.py` | Summary generation & schemas              | Produces `.summary.md` with YAML front matter, 200–400 word body.         |
-| `chunker.py`                 | Text chunking                             | Default window 180 lines w/ 30-line overlap; expects `pages.jsonl`.       |
-| `indexer.py`                 | ChromaDB integration                      | Collections: `search_summaries`, `search_code`; hybrid 0.6/0.4 weighting. |
-| `embeddings.py`              | OpenAI text embeddings                    | Text-embedding-3-small; handles retries, dim validation.                  |
-| `config.py`                  | Settings management                       | Loads from env + `.env`; see `Config` class for defaults.                 |
-| `api/`                       | FastAPI backend                           | **See `api/AGENTS.md`**.                                                  |
+| `backend/main.py`            | Unified CLI (`ingest`, `search`, `serve`) | Orchestrates render → summarize → chunk → index.                          |
+| `backend/render_to_webp.py`  | Rendering pipeline                        | Supports pages/tiles manifests; defaults: `emit=pages`, `manifest=none`.  |
+| `backend/summarize.py`       | Summary generation                        | Produces `.summary.md` with YAML front matter, 200–400 word body.         |
+| `backend/chunker.py`         | Text chunking                             | Default window 180 lines w/ 30-line overlap; expects `pages.jsonl`.       |
+| `backend/indexer.py`         | ChromaDB integration                      | Collections: `search_summaries`, `search_code`; hybrid 0.6/0.4 weighting. |
+| `backend/embeddings.py`      | OpenAI text embeddings                    | Text-embedding-3-small; handles retries, dim validation.                  |
+| `backend/config.py`          | Settings management                       | Loads from env + `.env`; see `Config` class for defaults.                 |
+| `backend/api/`               | FastAPI backend                           | **See `backend/api/AGENTS.md`**.                                          |
 | `docs/`                      | Specs, plans, references                  | **See `docs/AGENTS.md`**.                                                 |
 | `scripts/`                   | Helper scripts & env tools                | **See `scripts/AGENTS.md`**.                                              |
+| `tests/`                     | Tests & Fixtures                          | `tests/fixtures` contains test inputs/data.                               |
 | `.beads/`                    | Local issue tracker data                  | **NEVER EDIT MANUALLY**.                                                  |
-| `output*/`, `test_*`         | Generated artifacts/fixtures              | Treat as read-only unless a task says otherwise.                          |
+| `output*/`                   | Generated artifacts                       | Treat as read-only unless a task says otherwise.                          |
 
 ## 5. Pipeline Overview
 ```
@@ -88,7 +89,7 @@ source files → render_to_webp.py → pages/*.webp (+ optional tiles/*.webp)
 
 ## 7. Directory Supplements
 Refer to these for specific workflows:
-- [`api/AGENTS.md`](api/AGENTS.md)
+- [`backend/api/AGENTS.md`](backend/api/AGENTS.md)
 - [`docs/AGENTS.md`](docs/AGENTS.md)
 - [`scripts/AGENTS.md`](scripts/AGENTS.md)
 - [`docs/beads.md`](docs/beads.md) (Issue Tracker)

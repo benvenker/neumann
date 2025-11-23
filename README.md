@@ -210,10 +210,10 @@ A new FastAPI scaffold is available under the `api/` package. This provides a fo
 
 ```bash
 # Run with uvicorn (development mode)
-uvicorn api.app:app --reload --port 8001
+uvicorn backend.api.app:app --reload --port 8001
 
 # Or use the factory function
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 ```
 
 **Configuration**:
@@ -284,7 +284,7 @@ neumann serve ./out --port 8000
 
 # Terminal 2: Start API server
 tmux new -s neumann-api
-uvicorn api.app:app --reload --port 8001
+uvicorn backend.api.app:app --reload --port 8001
 # Detach: Ctrl+b, then d
 
 # List sessions

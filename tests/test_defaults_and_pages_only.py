@@ -13,7 +13,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 import pytest
 
-from render_to_webp import RenderConfig, render_file
+from backend.render_to_webp import RenderConfig, render_file
 
 
 def test_defaults_pages_only():

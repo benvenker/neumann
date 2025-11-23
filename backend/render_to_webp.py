@@ -39,9 +39,9 @@ from pygments.lexers import TextLexer, guess_lexer_for_filename
 # HTML ➜ PDF
 from weasyprint import HTML
 
-from config import config as app_config
-from ids import make_doc_id
-from utils.hash_utils import sha256_file
+from backend.config import config as app_config
+from backend.ids import make_doc_id
+from backend.utils import sha256_file
 
 SUPPORTED_MD = {".md", ".markdown", ".mdx"}
 SUPPORTED_CODE = {

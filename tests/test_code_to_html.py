@@ -10,7 +10,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-from render_to_webp import RenderConfig, code_to_html
+from backend.render_to_webp import RenderConfig, code_to_html
 
 
 def test_code_to_html_python():

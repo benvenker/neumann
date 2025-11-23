@@ -13,8 +13,8 @@ from typing import Any
 from chromadb.api import ClientAPI
 from fastapi import APIRouter, Depends, HTTPException
 
-from config import Config
-from indexer import get_collections
+from backend.config import Config
+from backend.indexer import get_collections
 
 from ..deps import get_chroma_client, get_settings
 from ..models import ChunkInfo, DocumentInfo, PageRecord

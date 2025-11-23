@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from summarize import (
+from backend.summarize import (
     detect_language_from_extension,
     generate_doc_id_from_path,
     save_summary_md,
@@ -51,7 +51,7 @@ def test_summarize_raises_on_short_body() -> None:
 
     import pytest
 
-    from models import ValidationError
+    from backend.models import ValidationError
 
     with pytest.raises(ValidationError):
         summarize_file(source, text, llm_generate_markdown=short_llm)

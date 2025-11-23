@@ -16,11 +16,11 @@ neumann ingest --input-dir ./docs --out-dir ./out
 ```bash
 # Option A: In tmux (recommended)
 tmux new -s neumann-api
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 # Press Ctrl+b, d to detach
 
 # Option B: Regular terminal
-uvicorn api.app:create_app --factory --reload --port 8001
+uvicorn backend.api.app:create_app --factory --reload --port 8001
 ```
 
 ## 3. Run Tests

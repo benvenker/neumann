@@ -11,7 +11,7 @@ import time
 
 from openai import APIError, APITimeoutError, OpenAI, RateLimitError
 
-from config import config
+from backend.config import config
 
 # Expected embedding dimensions for known models
 EXPECTED_DIMS = {"text-embedding-3-small": 1536}

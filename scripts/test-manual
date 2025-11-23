@@ -24,6 +24,9 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
+# Add project root to PYTHONPATH so 'backend' package is importable
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
 # Run the test script(s) with Python
 exec python3 "$@"
 

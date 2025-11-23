@@ -10,18 +10,18 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 ## Current Status
 
 **Phase 1: Document → Image Pipeline** ✓ (Complete)
-- Single-file CLI script (`render_to_webp.py`)
+- Single-file CLI script (`backend/render_to_webp.py`)
 - Markdown/code → HTML → PDF (WeasyPrint) → WebP pages
 - Emits `pages.jsonl` for every run (pages-first default)
 - Tiling and tile manifests are optional and off by default
 
 **Phase 2: Core Search Infrastructure** ✓ (Complete)
-- `embeddings.py`: OpenAI text embeddings (text-embedding-3-small, 1536-dim)
-- `indexer.py`: ChromaDB integration with persistent storage and semantic search
-- `models.py`: Pydantic schemas for summaries
-- `chunker.py`: Line-based text chunking with overlap
-- `config.py`: Centralized configuration management
-- `summarize.py`: LLM summarization module
+- `backend/embeddings.py`: OpenAI text embeddings (text-embedding-3-small, 1536-dim)
+- `backend/indexer.py`: ChromaDB integration with persistent storage and semantic search
+- `backend/models.py`: Pydantic schemas for summaries
+- `backend/chunker.py`: Line-based text chunking with overlap
+- `backend/config.py`: Centralized configuration management
+- `backend/summarize.py`: LLM summarization module
 
 **Phase 3: Search API** ✓ (In Progress)
 - FastAPI web service (`api/`)
@@ -35,20 +35,24 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 ```
 neumann/
 ├── .beads/                  # Beads issue tracking (git-tracked)
-├── api/                     # FastAPI backend
-│   ├── app.py               # App factory
-│   ├── models.py            # API Pydantic models
-│   ├── deps.py              # Dependencies
-│   └── routes/              # Route handlers
-├── main.py                  # Main CLI orchestrator (ingest, search, serve)
-├── render_to_webp.py       # Renderer-only CLI (legacy via neumann-render)
-├── ids.py                   # Canonical doc_id generation
-├── embeddings.py            # OpenAI text embeddings
-├── indexer.py               # ChromaDB integration
-├── config.py                # Configuration management
-├── models.py                # Core Pydantic schemas
-├── chunker.py               # Text chunking
-├── summarize.py             # LLM summarization
+├── backend/                 # Core application logic
+│   ├── api/                 # FastAPI backend
+│   │   ├── app.py           # App factory
+│   │   ├── models.py        # API Pydantic models
+│   │   ├── deps.py          # Dependencies
+│   │   └── routes/          # Route handlers
+│   ├── main.py              # Main CLI orchestrator (ingest, search, serve)
+│   ├── render_to_webp.py    # Renderer-only CLI (legacy via neumann-render)
+│   ├── ids.py               # Canonical doc_id generation
+│   ├── embeddings.py        # OpenAI text embeddings
+│   ├── indexer.py           # ChromaDB integration
+│   ├── config.py            # Configuration management
+│   ├── models.py            # Core Pydantic schemas
+│   ├── chunker.py           # Text chunking
+│   ├── summarize.py         # LLM summarization
+│   └── utils.py             # Shared utilities
+├── tests/                   # Tests
+│   └── fixtures/            # Test data and input
 ├── pyproject.toml           # Modern Python project config (PEP 621)
 ├── .python-version          # Python 3.10
 ├── .envrc                   # direnv auto-activation
@@ -58,14 +62,14 @@ neumann/
 └── chroma_data/             # Local ChromaDB storage (SQLite)
 ```
 
-**Main CLI (`main.py`)**: Orchestrates the full pipeline with three subcommands:
+**Main CLI (`backend/main.py`)**: Orchestrates the full pipeline with three subcommands:
 - `ingest`: render → summarize → chunk → index (full pipeline)
 - `search`: hybrid search with semantic + lexical matching
 - `serve`: HTTP server for output directory
 
-**Renderer (`render_to_webp.py`)**: Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL` and `asset_root` (default: "out"). Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
+**Renderer (`backend/render_to_webp.py`)**: Builds page images and writes `pages/pages.jsonl` with HTTP `uri` values derived from `ASSET_BASE_URL` and `asset_root` (default: "out"). Tiles are generated only when `--emit tiles|both` is selected; tile manifests are written only when `--manifest` is not `none`.
 
-**Script entry points**: `neumann` → `main:main` (unified CLI), `neumann-render` → `render_to_webp:main` (renderer-only).
+**Script entry points**: `neumann` → `backend.main:main` (unified CLI), `neumann-render` → `backend.render_to_webp:main` (renderer-only).
 
 Defaults: `emit=pages`, `manifest=none`, `linenos=inline`, `tile_mode=bands`, `tile_overlap=0.10`, `asset_root=out`. `pages.jsonl` is always emitted. Tile output and manifests are opt-in.
 

@@ -60,11 +60,11 @@ def test_hybrid_search_keyword_args():
 
     # Test semantic search path (requires OpenAI key)
     logger.info("\n1.1 Testing semantic search path...")
-    from config import config
+    from backend.config import config
 
     if config.has_openai_key:
         logger.info("OpenAI key available - testing semantic search")
-        rc, stdout, stderr = run_command(["python", "-m", "main", "search", "vector store", "--k", "3"])
+        rc, stdout, stderr = run_command(["python", "-m", "backend.main", "search", "vector store", "--k", "3"])
         if rc == 0:
             logger.info("✓ Semantic search executed successfully")
             logger.info("  (keyword args fix verified - no test failure)")
@@ -79,7 +79,7 @@ def test_hybrid_search_keyword_args():
 
     # Test lexical-only search path (no OpenAI key needed)
     logger.info("\n1.2 Testing lexical-only search path...")
-    rc, stdout, stderr = run_command(["python", "-m", "main", "search", "--must", "chroma", "--k", "3"])
+    rc, stdout, stderr = run_command(["python", "-m", "backend.main", "search", "--must", "chroma", "--k", "3"])
     if rc == 0:
         logger.info("✓ Lexical-only search executed successfully")
         logger.info("  (keyword args fix verified - no test failure)")
@@ -91,7 +91,7 @@ def test_hybrid_search_keyword_args():
 
     # Test empty query (should use lexical-only path)
     logger.info("\n1.3 Testing empty query (lexical-only fallback)...")
-    rc, stdout, stderr = run_command(["python", "-m", "main", "search", "", "--must", "test", "--k", "3"])
+    rc, stdout, stderr = run_command(["python", "-m", "backend.main", "search", "", "--must", "test", "--k", "3"])
     if rc == 0 or rc == 2:  # rc=2 is expected when no matches
         logger.info("✓ Empty query handled correctly")
     else:
@@ -125,7 +125,7 @@ def test_asset_root_configurability():
             [
                 "python",
                 "-m",
-                "main",
+                "backend.main",
                 "ingest",
                 "--input-dir",
                 str(input_dir),
@@ -162,7 +162,7 @@ def test_asset_root_configurability():
             [
                 "python",
                 "-m",
-                "main",
+                "backend.main",
                 "ingest",
                 "--input-dir",
                 str(input_dir),
@@ -192,7 +192,7 @@ def test_asset_root_configurability():
             [
                 "python",
                 "-m",
-                "main",
+                "backend.main",
                 "ingest",
                 "--input-dir",
                 str(input_dir),
@@ -224,7 +224,7 @@ def test_serve_robustness():
     logger.info("=" * 60)
 
     # Create a test output directory
-    test_output_dir = project_root / "output"
+    test_output_dir = project_root / "out"
     if not test_output_dir.exists():
         logger.warning("⚠ output directory not found - creating minimal structure")
         test_output_dir.mkdir(exist_ok=True)
@@ -240,7 +240,7 @@ def test_serve_robustness():
     # Test 3.1: Default serve command starts correctly
     logger.info("\n3.1 Testing serve command starts correctly...")
     proc = subprocess.Popen(
-        [python_cmd, "-m", "main", "serve", str(test_output_dir), "--port", "8765"],
+        [python_cmd, "-m", "backend.main", "serve", str(test_output_dir), "--port", "8765"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -268,7 +268,7 @@ def test_serve_robustness():
     # Test 3.2: serve with --asset-root flag
     logger.info("\n3.2 Testing serve command with --asset-root...")
     proc = subprocess.Popen(
-        [python_cmd, "-m", "main", "serve", str(test_output_dir), "--asset-root", "output", "--port", "8766"],
+        [python_cmd, "-m", "backend.main", "serve", str(test_output_dir), "--asset-root", "output", "--port", "8766"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -295,7 +295,7 @@ def test_serve_robustness():
 def main() -> int:
     """Run all manual tests."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = project_root / "test_output" / f"cli_review_fixes_{timestamp}.log"
+    output_file = project_root / "logs" / f"cli_review_fixes_{timestamp}.log"
 
     logger.info("🧪 Testing CLI Review Fixes (nm-25)")
     logger.info("=" * 60)

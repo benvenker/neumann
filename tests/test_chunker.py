@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from chunker import CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines, load_page_uris
+from backend.chunker import CHROMA_CLOUD_DOC_MAX_BYTES, chunk_file_by_lines, load_page_uris
 
 
 def test_load_page_uris_missing_file():

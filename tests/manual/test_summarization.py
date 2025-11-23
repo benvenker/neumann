@@ -19,7 +19,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from summarize import save_summary_md, summarize_file  # noqa: E402
+from backend.summarize import save_summary_md, summarize_file  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -149,7 +149,7 @@ def test_summarization(test_data_dir: Path, output_dir: Path, limit: int | None 
 
 if __name__ == "__main__":
     project_root = Path(__file__).parent.parent.parent
-    test_data_dir = project_root / "test_data"
+    test_data_dir = project_root / "tests/fixtures/data"
     output_dir = project_root / "test_output_summaries"
 
     if not test_data_dir.exists():
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     # Check for OPENAI_API_KEY
-    from config import config
+    from backend.config import config
 
     if not config.has_openai_key:
         logger.warning("⚠️  OPENAI_API_KEY not set - summarization calls will fail")

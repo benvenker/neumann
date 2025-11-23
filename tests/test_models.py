@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from models import FileSummary, SummaryFrontMatter, ValidationError
+from backend.models import FileSummary, SummaryFrontMatter, ValidationError
 
 
 def make_summary_md(words: int) -> str:

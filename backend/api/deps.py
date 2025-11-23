@@ -7,9 +7,9 @@ Centralizes dependencies (DI) to keep endpoints decoupled from global imports.
 from chromadb.api import ClientAPI
 from fastapi import Depends
 
-from config import Config
-from config import config as global_config
-from indexer import get_client as get_chroma
+from backend.config import Config
+from backend.config import config as global_config
+from backend.indexer import get_client as get_chroma
 
 
 def get_settings() -> Config:

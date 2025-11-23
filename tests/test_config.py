@@ -7,8 +7,8 @@ import pytest
 def reload_config_module():
     import sys
 
-    sys.modules.pop("config", None)
-    return importlib.import_module("config")
+    sys.modules.pop("backend.config", None)
+    return importlib.import_module("backend.config")
 
 
 def test_config_defaults(monkeypatch):

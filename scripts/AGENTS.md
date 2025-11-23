@@ -21,7 +21,7 @@ You **MUST** use `tmux` for:
 **Example**:
 ```bash
 tmux new -s neumann-api
-uvicorn api.app:app --reload --port 8001
+uvicorn backend.api.app:app --reload --port 8001
 ```
 
 ## 2. Environment Variables & Configuration

@@ -34,8 +34,8 @@ dev = [
 ]
 
 [project.scripts]
-neumann = "main:main"
-neumann-render = "render_to_webp:main"
+neumann = "backend.main:main"
+neumann-render = "backend.render_to_webp:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -79,4 +79,4 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+packages = ["backend"]

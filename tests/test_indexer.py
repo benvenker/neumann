@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from pathlib import Path
 
-from indexer import get_client, get_collections, upsert_code_chunks, upsert_summaries
+from backend.indexer import get_client, get_collections, upsert_code_chunks, upsert_summaries
 
 
 def test_client_initialization(tmp_path: Path) -> None:

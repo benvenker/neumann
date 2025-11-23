@@ -92,8 +92,8 @@ class Config(BaseSettings):
         path = Path(v).expanduser()  # Handle ~ expansion
 
         if not path.is_absolute():
-            # Resolve relative paths from project root (where this file lives)
-            project_root = Path(__file__).parent
+            # Resolve relative paths from project root (parent of backend package)
+            project_root = Path(__file__).parent.parent
             path = (project_root / path).resolve()
         else:
             path = path.resolve()

@@ -25,8 +25,8 @@ from tempfile import mkdtemp
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from chunker import chunk_file_by_lines  # noqa: E402
-from indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
+from backend.chunker import chunk_file_by_lines  # noqa: E402
+from backend.indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
 
 # Module-level logger (will be configured in main)
 logger = logging.getLogger(__name__)
@@ -306,7 +306,7 @@ def main() -> int:
     # Setup logging (this creates the logger)
     logger = setup_logging(output_file)
 
-    test_data_dir = project_root / "test_data"
+    test_data_dir = project_root / "tests/fixtures/data"
 
     if not test_data_dir.exists():
         logger.error(f"❌ Test data directory not found: {test_data_dir}")

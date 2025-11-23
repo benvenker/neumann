@@ -14,7 +14,7 @@ This file supplements the root `AGENTS.md` with instructions specific to the `do
 - Use Markdown with 120-character soft wrap.
 - Ensure headings use sentence case and follow existing hierarchy.
 - Provide forward/back references when splitting content across files.
-- Call out code paths with backticks (`render_to_webp.py`) and keep code samples minimal.
+- Call out code paths with backticks (`backend/render_to_webp.py`) and keep code samples minimal.
 - Document dates explicitly (e.g., “Updated November 2, 2025”) when logging benchmark runs.
 
 ## 3. Syncing with Code Changes

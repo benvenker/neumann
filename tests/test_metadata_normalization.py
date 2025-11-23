@@ -1,6 +1,6 @@
 """Unit tests for metadata normalization and hydration."""
 
-from indexer import (
+from backend.indexer import (
     NORMALIZED_META_LIST_KEYS,
     _normalize_metadata_for_chroma,
     _parse_meta_list,

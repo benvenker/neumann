@@ -22,8 +22,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from chunker import chunk_file_by_lines  # noqa: E402
-from indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
+from backend.chunker import chunk_file_by_lines  # noqa: E402
+from backend.indexer import get_client, lexical_search, upsert_code_chunks  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -160,7 +160,7 @@ def run_searches(chroma_client):
 def main() -> int:
     """Run the end-to-end test."""
     project_root = Path(__file__).parent.parent.parent
-    test_data_dir = project_root / "test_data"
+    test_data_dir = project_root / "tests/fixtures/data"
 
     if not test_data_dir.exists():
         logger.error(f"Test data directory not found: {test_data_dir}")
