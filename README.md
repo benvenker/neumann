@@ -212,8 +212,12 @@ A new FastAPI scaffold is available under the `api/` package. This provides a fo
 # Run with uvicorn (development mode)
 uvicorn backend.api.app:app --reload --port 8001
 
-# Or use the factory function
-uvicorn backend.api.app:create_app --factory --reload --port 8001
+# Run alongside static assets (recommended for UI development)
+# Terminal 1: Asset Server (port 8000)
+tmux new -s neumann-assets 'neumann serve ./out --port 8000'
+
+# Terminal 2: API Server (port 8001)
+tmux new -s neumann-api 'uvicorn backend.api.app:app --reload --port 8001'
 ```
 
 **Configuration**:
@@ -221,22 +225,23 @@ uvicorn backend.api.app:create_app --factory --reload --port 8001
 The API uses two additional environment variables:
 
 - **`OUTPUT_DIR`** (default: `./out`): Filesystem path for rendered output (pages/tiles). This is where the API will look for document assets and manifests.
-  
+
 - **`API_CORS_ORIGINS`**: Allowed CORS origins for the API. Accepts comma-separated string or JSON array format:
   ```bash
   # Comma-separated
   export API_CORS_ORIGINS="http://localhost:3000,http://127.0.0.1:5173"
-  
+
   # JSON array
   export API_CORS_ORIGINS='["http://localhost:3000","http://127.0.0.1:5173"]'
   ```
-  
+
   If not set, CORS middleware is disabled (secure-by-default for local usage).
 
 **Endpoints**:
 
 Currently available:
 - `/healthz` - Health check endpoint
+- `/api/v1/config` - Public configuration (asset base URL, OpenAI status)
 - `/docs` - Interactive API documentation (OpenAPI/Swagger)
 - `/openapi.json` - OpenAPI schema
 
@@ -246,7 +251,6 @@ Currently available:
 - **POST `/api/v1/search/hybrid`** - Combined semantic + lexical with weighted fusion
 
 **Examples**:
-
 ```bash
 # Lexical search: Find "vector" in indexer.py
 curl -s http://127.0.0.1:8001/api/v1/search/lexical \

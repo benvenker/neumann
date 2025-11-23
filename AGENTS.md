@@ -98,6 +98,7 @@ Refer to these for specific workflows:
 - **Ingest**: `neumann ingest --input-dir ./docs --out-dir ./out` (USE TMUX).
 - **Search**: `neumann search "query" --must term`.
 - **Serve**: `neumann serve ./out` (USE TMUX).
+- **API Server**: `uvicorn backend.api.app:app --reload --port 8001` (USE TMUX).
 - **Manual Tests**: `scripts/test-manual tests/manual/test_<name>.py`.
 
 ## 9. Environment Variables

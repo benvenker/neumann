@@ -66,6 +66,16 @@ def create_app() -> FastAPI:
         """Health check endpoint."""
         return {"status": "ok"}
 
+    @app.get("/api/v1/config", tags=["infra"])
+    def get_config(cfg: Config = Depends(get_settings)) -> dict[str, object]:
+        """
+        Get public configuration for the frontend.
+        """
+        return {
+            "asset_base_url": "/api/v1/assets",
+            "has_openai_key": cfg.has_openai_key,
+        }
+
     return app
 
 
