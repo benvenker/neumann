@@ -1,21 +1,21 @@
 # Acceptance Testing Results - Neumann MVP
 
 ## Test Date
-2025-11-03 09:33:12
+2025-11-22 19:03:53
 
 ## Test Corpus
 
-- **Total files**: 54
+- **Total files**: 8
 - **Source**: test_data/ directory
   - 29 Next.js/React/TypeScript files
   - 25 ChromaDB documentation files
-- **Chunks indexed**: 78
-- **Summaries indexed**: 50
+- **Chunks indexed**: 14
+- **Summaries indexed**: 8
 
 ## Index Metrics
 
-- **Index size on disk**: 5.24 MB
-- **ChromaDB storage**: /private/var/folders/p5/chw4_fkn6_796msg8rlj0h900000gn/T/pytest-of-ben/pytest-106/acceptance0/chroma
+- **Index size on disk**: 1.65 MB
+- **ChromaDB storage**: /private/var/folders/p5/chw4_fkn6_796msg8rlj0h900000gn/T/pytest-of-ben/pytest-134/acceptance0/chroma
 - **Chunk size compliance**: All chunks < 16KB ✓
 
 ## Test Queries
@@ -75,6 +75,6 @@ The Neumann pipeline successfully:
 
 ## Test Environment
 
-- Python: 3.10.17
+- Python: 3.10.19
 - ChromaDB: 1.3.0
 - OpenAI: text-embedding-3-small (1536-d)
