@@ -359,6 +359,8 @@ def test_hybrid_score_fields(tmp_path: Path) -> None:
         assert "sem_score" in r, "Missing 'sem_score' field"
         assert "lex_score" in r, "Missing 'lex_score' field"
         assert "rrf_score" in r, "Missing 'rrf_score' field"
+        assert "lex_term_hits" in r, "Missing 'lex_term_hits' field"
+        assert "lex_regex_hits" in r, "Missing 'lex_regex_hits' field"
         # Verify score is in [0,1] range
         assert 0.0 <= r["score"] <= 1.0, f"score out of range: {r['score']}"
         assert 0.0 <= r["sem_score"] <= 1.0, f"sem_score out of range: {r['sem_score']}"

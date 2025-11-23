@@ -586,6 +586,8 @@ def lexical_search(
                 "line_end": line_end,
                 "why": why,
                 "metadata": metadata_norm,
+                "lex_term_hits": int(metrics.get("term_hits", 0)),
+                "lex_regex_hits": int(metrics.get("regex_hits", 0)),
                 # Ephemeral tie-breaker keys (will be stripped after sorting)
                 "_cats": cats,
                 "_raw_hits": raw_hits,
@@ -856,6 +858,10 @@ def hybrid_search(
         # Merge metadata (prefer semantic for rich summary data, fallback to lexical)
         metadata = (sem_match or {}).get("metadata") or (lex_match or {}).get("metadata") or {}
 
+        # Merge lexical hit counts (default to 0 if no lexical match)
+        lex_term_hits = (lex_match or {}).get("lex_term_hits", 0)
+        lex_regex_hits = (lex_match or {}).get("lex_regex_hits", 0)
+
         # Concatenate why signals
         why: list[str] = []
         if lex_match and isinstance(lex_match.get("why"), list):
@@ -871,6 +877,8 @@ def hybrid_search(
                 "sem_score": sem_score,  # for debugging/UX
                 "lex_score": lex_score,  # for debugging/UX
                 "rrf_score": fused_rrf,  # tie-break/info
+                "lex_term_hits": lex_term_hits,
+                "lex_regex_hits": lex_regex_hits,
                 "page_uris": page_uris,
                 "line_start": line_start,
                 "line_end": line_end,
