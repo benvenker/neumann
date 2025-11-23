@@ -189,6 +189,20 @@ This ensures all changes are committed and pushed immediately (bypasses 30-secon
 - **Hash-based** (e.g., `nm-a1b2`, `nm-f14c`) - Not sequential! Prevents collisions when multiple agents/branches work concurrently.
 - Epic children use dotted notation: `nm-a3f8e9.1`, `nm-a3f8e9.2`
 
+### Branch Switching & Troubleshooting
+
+**Common Issue: "Deleted" files in git status**
+If you see `deleted: .beads/beads.base.jsonl` or similar in `git status`:
+1. These are internal temporary files used for 3-way merging. They should **never** be committed.
+2. If they were previously committed, remove them: `git rm .beads/beads.base.* .beads/beads.left.*`
+3. Ensure they are in `.gitignore`.
+
+**Switching Branches**
+When switching branches, `issues.jsonl` may change. Beads will automatically detect this and import the new state.
+1. **Before switching**: Run `bd sync` to save your work to `issues.jsonl`.
+2. **After switching**: Run `bd ready` or `bd list` to trigger an auto-import of the new branch's state.
+3. **Conflict**: If you get a merge conflict in `issues.jsonl`, treat it like any other text file conflict. Resolve it, then run `bd import issues.jsonl` to update the local database.
+
 ### Workflow Reminders
 - Always attach commits to an issue ID (`nm-###`).
 - Use epics for multi-stage initiatives and link dependent issues.
