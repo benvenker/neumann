@@ -84,4 +84,5 @@ test_output/
 .beads/.exclusive-lock
 .beads/beads.base.*
 .beads/beads.left.*
+.beads/beads.right.*
 .beads/daemon.*
