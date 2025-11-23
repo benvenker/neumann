@@ -150,6 +150,8 @@ class BaseSearchResult(BaseModel):
     line_end: int | None = None
     why: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    lex_term_hits: int = Field(default=0, description="Count of exact term matches")
+    lex_regex_hits: int = Field(default=0, description="Count of regex matches")
 
 
 class LexicalSearchResult(BaseSearchResult):
