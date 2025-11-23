@@ -83,6 +83,15 @@ For deep inspection.
 ]
 ```
 
+### C. Config Response (`GET /api/v1/config`)
+Bootstrapping data.
+```json
+{
+  "asset_base_url": "/api/v1/assets",
+  "has_openai_key": true
+}
+```
+
 ---
 
 ## 3. UI Requirements (The "Vibe Coding" Part)
