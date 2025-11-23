@@ -1,5 +1,7 @@
 # Documentation Guide for Agents
 
+⚠️ **Protocol Override**: Follow the [Operational Protocols in root AGENTS.md](../AGENTS.md) (tmux, Beads MCP) for all tasks in this directory.
+
 This file supplements the root `AGENTS.md` with instructions specific to the `docs/` tree. Use it whenever you add or revise specifications, plans, or supporting references.
 
 ## 1. Directory Overview

@@ -15,7 +15,7 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 - Emits `pages.jsonl` for every run (pages-first default)
 - Tiling and tile manifests are optional and off by default
 
-**Phase 2: Core Search Infrastructure** ✓ (In Progress)
+**Phase 2: Core Search Infrastructure** ✓ (Complete)
 - `embeddings.py`: OpenAI text embeddings (text-embedding-3-small, 1536-dim)
 - `indexer.py`: ChromaDB integration with persistent storage and semantic search
 - `models.py`: Pydantic schemas for summaries
@@ -23,19 +23,30 @@ Neumann is a document processing pipeline that converts text files (Markdown, co
 - `config.py`: Centralized configuration management
 - `summarize.py`: LLM summarization module
 
+**Phase 3: Search API** ✓ (In Progress)
+- FastAPI web service (`api/`)
+- Search endpoints (lexical, semantic, hybrid)
+- Document browsing endpoints
+- Dependency injection and Pydantic models
+
 ## Architecture
 
 ### Current Structure
 ```
 neumann/
 ├── .beads/                  # Beads issue tracking (git-tracked)
+├── api/                     # FastAPI backend
+│   ├── app.py               # App factory
+│   ├── models.py            # API Pydantic models
+│   ├── deps.py              # Dependencies
+│   └── routes/              # Route handlers
 ├── main.py                  # Main CLI orchestrator (ingest, search, serve)
 ├── render_to_webp.py       # Renderer-only CLI (legacy via neumann-render)
 ├── ids.py                   # Canonical doc_id generation
 ├── embeddings.py            # OpenAI text embeddings
 ├── indexer.py               # ChromaDB integration
 ├── config.py                # Configuration management
-├── models.py                # Pydantic schemas
+├── models.py                # Core Pydantic schemas
 ├── chunker.py               # Text chunking
 ├── summarize.py             # LLM summarization
 ├── pyproject.toml           # Modern Python project config (PEP 621)
@@ -398,11 +409,12 @@ uvicorn main:app --reload --port 8000
 - ✓ Semantic search over summaries (nm-22)
 - ✓ Hybrid search implementation (nm-24)
 
-### Phase 3: Search API
-- FastAPI web service
-- Text search endpoint (keyword + semantic)
-- Image search endpoint (visual similarity)
-- Hybrid search endpoint (combined text + image)
+### Phase 3: Search API ✓ (In Progress)
+- ✓ FastAPI web service
+- ✓ Text search endpoint (keyword + semantic)
+- ✓ Hybrid search endpoint (combined text + image)
+- Document browsing endpoints
+- Image search endpoint (visual similarity) - Pending
 
 ### Phase 4: UI & UX
 - Web UI for uploading documents
