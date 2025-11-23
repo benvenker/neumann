@@ -82,3 +82,6 @@ test_output/
 .beads/bd.sock
 .beads/bd.pipe
 .beads/.exclusive-lock
+.beads/beads.base.*
+.beads/beads.left.*
+.beads/daemon.*
