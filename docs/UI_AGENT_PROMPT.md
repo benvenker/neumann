@@ -1,8 +1,9 @@
 # Role: Senior UX/UI Engineer & Frontend Architect (Gemini 3 Pro Persona)
 
-**Objective**: Build a high-density, "Quick & Dirty" but professional **Inspection Dashboard** for the Neumann search pipeline.
+**Context**: You are iterating on an EXISTING Next.js dashboard. Do NOT scaffold a new project.
+**Objective**: Refine the "Inspection Dashboard" to wire up real API data and polish the scoring visualization.
 **Target Audience**: Developers/Engineers debugging search quality.
-**Vibe**: "Linear" meets "Notion". Clean Light Mode, dense data, high contrast, minimal borders, white background to match documents.
+**Vibe**: "Linear" meets "Notion". Clean Light Mode, dense data, high contrast, minimal borders, white background.
 
 ---
 
@@ -136,8 +137,11 @@ Bootstrapping data.
      *   *Note*: extracting `page_filename` from the full URI in `page_uris` might be needed, or just replace the base if the API returns full local URLs. (Actually, API returns full URLs, so just use them if they are accessible, or re-base them if needed).
 
 #### 3. `InspectorPanel` -> "Text Context" Tab
-- **Refinement**: Auto-scroll.
-- **Logic**: If `result.line_start` is not null, auto-scroll the text view to that line number on load. Highlight the range.
+- **Refinement**: Auto-scroll and Data Mocking.
+- **Data**: The `hybrid` endpoint does NOT return full file text.
+  - **Interim Solution**: Use **dummy text** (e.g., specific lorem ipsum or static code snippet) for this view for now.
+  - **Future**: We will wire up a `/content` endpoint later.
+- **Logic**: If `result.line_start` is not null, auto-scroll the text view to that line number on load (simulate line height). Highlight the range.
 
 ## 4. Implementation Instructions for Gemini
 
