@@ -103,59 +103,52 @@ Bootstrapping data.
 
 ## 3. UI Requirements (The "Vibe Coding" Part)
 
-Act as an agentic coder. Break this down into:
-1.  **Scaffolding**: Setup Next.js, Tailwind, Shadcn.
-2.  **Components**: Build the specific layout below.
-3.  **State**: Manage `query`, `must_terms`, `weights`, and `selectedResult`.
+**Current Status**: The project is scaffolded, and the layout is solid (see "Base State" below).
+**Goal**: Iterate on the existing components to wire up real data and polish the scoring visualization.
 
-### Layout: Split View (Fixed Height)
-- **Sidebar (35%)**: Scrollable list of results.
-- **Main Panel (65%)**: Inspector details.
+### A. Layout & Base State (Keep This)
+- **Split View**: Sidebar (35%) / Main (65%).
+- **Styling**: Zinc-50 to Zinc-900 scale, high density, clean white background.
 
-### Component Specs
+### B. Component Refinements
 
-#### 1. `ControlBar` (Header)
-- **Input**: "Search query..." (large, auto-focus).
-- **Advanced**:
-  - `Must Terms`: Input for comma-separated tokens (e.g., "logger, error").
-  - `Regex`: Input for raw regex string.
-  - **Sliders**: `w_semantic` (0.6) vs `w_lexical` (0.4). VISUALIZE this trade-off (e.g., "More Meaning <-> More Exact").
+#### 1. `ResultList` (Sidebar)
+- **Refinement**: Upgrade the Score Visualization.
+- **Badge Row**: Keep `Total` | `Sem` | `Lex` (or `Key`).
+- **Interaction**: Implement a **HoverCard / Tooltip** on the **Total Score** badge.
+  - **Content**: Show the full breakdown equation dynamically:
+    ```
+    Total = (Sem × w_sem) + (Lex × w_lex)
+    -------------------------------------
+    Semantic: 0.XX  (Weight: 0.6)
+    Lexical:  0.XX  (Weight: 0.4)
+      ↳ Keywords: 16
+      ↳ Regex:    2
+    ```
+  - **Visuals**: Use a clean, tabular layout inside the tooltip. Small text (text-xs), high contrast.
 
-#### 2. `ResultList` (Sidebar)
-- **Density**: Compact.
-- **Card Design**:
-  - **Top**: `source_path` (Mono font, truncated).
-  - **Middle**: Badges for scores.
-    - `Total` (Zinc-900), `Sem` (Blue-600), `Lex` (Green-600).
-    - **New**: If `lex_term_hits > 0`, show a small "Type" icon with count (e.g., 'T: 2').
-    - **New**: If `lex_regex_hits > 0`, show a small "Regex" icon with count (e.g., 'R: 1').
-  - **Bottom**: The first `why` reason (e.g., "matched term 'foo'").
-  - **Visual**: 48px square thumbnail of the page (use `page_uris[0]`).
-- **Active State**: Highlight selected card background (e.g., Zinc-100).
+#### 2. `InspectorPanel` (Main) -> "Visual" Tab
+- **Refinement**: Wire up Real Images.
+- **Logic**:
+  1. On mount, fetch configuration from `GET /api/v1/config`.
+  2. Store `asset_base_url` (e.g., `/api/v1/assets`).
+  3. Render images using: `<img src={`${config.asset_base_url}/${result.doc_id}/pages/${page_filename}`} />`.
+     *   *Note*: extracting `page_filename` from the full URI in `page_uris` might be needed, or just replace the base if the API returns full local URLs. (Actually, API returns full URLs, so just use them if they are accessible, or re-base them if needed).
 
-#### 3. `InspectorPanel` (Main)
-- **Header**: Large filename + Full path + "Why" reasons as tags.
-- **Tabs**:
-  - **Tab A: "Visual" (Clean View)**:
-    - **Content**: Render the full WebP image(s) in a vertical scroll list.
-    - **No Overlays**: Just the clean document image.
-  - **Tab B: "Text Context" (Interactive)**:
-    - **Content**: Render the *full file text* (mock it for now, or use the chunk text if that's all we have).
-    - **Interaction**: When a chunk from the list (see below) is clicked, scroll to and highlight that section in the text view (yellow background).
-  - **Tab C: "Chunks List"**:
-    - **Content**: A list of all chunks for this doc.
-    - **Detail**: Show the first 2-3 lines of text for *each* chunk so it's not empty.
-    - **Action**: Clicking a chunk row jumps to the "Text Context" tab and highlights it.
-  - **Tab D: "Raw JSON"**: `<pre>` dump of the result object.
+#### 3. `InspectorPanel` -> "Text Context" Tab
+- **Refinement**: Auto-scroll.
+- **Logic**: If `result.line_start` is not null, auto-scroll the text view to that line number on load. Highlight the range.
 
 ## 4. Implementation Instructions for Gemini
 
-1.  **Initialize**: `npx create-next-app@latest frontend --typescript --tailwind --eslint`.
-2.  **Dependencies**: `npm install lucide-react clsx tailwind-merge`.
-3.  **Shadcn**: Install `card`, `tabs`, `slider`, `badge`, `input`, `button`.
-4.  **Mock Data**: Create a `data.ts` with the JSON example above. Ensure `chunk.text` has actual content.
-5.  **Styling**: **LIGHT MODE ONLY**. Use `zinc-50` to `zinc-900` scale. Clean white backgrounds.
+1.  **Review**: Check `frontend/src` for existing components.
+2.  **Update Models**: Ensure TypeScript interfaces match the new JSON shape (add `lex_term_hits`, `lex_regex_hits`).
+3.  **Wire Config**: Create a hook or context to fetch/store `GET /config`.
+4.  **Refine Components**:
+    - Update `ResultCard` with the new Tooltip.
+    - Update `VisualViewer` to use real image URLs.
+5.  **Verify**: Ensure the "Why" strings and new lexical counts appear correctly.
 
-**Deliverable**: A fully functional, "vibe-coded" dashboard. Start by scaffolding the project.
+**Deliverable**: Polished UI with working image rendering and transparent scoring math.
 
 ```
