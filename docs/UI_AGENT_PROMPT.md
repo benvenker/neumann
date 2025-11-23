@@ -21,48 +21,55 @@ The core list of results.
 ```json
 [
   {
-    "doc_id": "app__api__chat__route.ts",
-    "source_path": "/Users/ben/code/neumann/test_data/app/api/chat/route.ts",
-    "score": 0.5227,
-    "sem_score": 0.5227,
-    "lex_score": 0.0,
-    "rrf_score": 0.0163,
-    "lex_term_hits": 2,
-    "lex_regex_hits": 1,
+    "doc_id": "chroma__docs__cip__CIP-10112023_Authorization.md",
+    "source_path": "/Users/ben/code/neumann/docs/chroma/docs/cip/CIP-10112023_Authorization.md",
+    "score": 0.6924,
+    "sem_score": 0.0,
+    "lex_score": 0.6924,
+    "rrf_score": 0.0164,
+    "lex_term_hits": 16,
+    "lex_regex_hits": 0,
     "page_uris": [
-      "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p001.webp",
-      "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p002.webp"
+      "http://127.0.0.1:8000/out/chroma__docs__cip__CIP-10112023_Authorization.md/pages/CIP-10112023_Authorization-p001.webp",
+      "http://127.0.0.1:8000/out/chroma__docs__cip__CIP-10112023_Authorization.md/pages/CIP-10112023_Authorization-p002.webp"
+    ],
+    "line_start": 1,
+    "line_end": 180,
+    "why": [
+      "matched term: 'def' x4",
+      "matched term: 'class' x12"
+    ],
+    "metadata": {
+      "language": "markdown",
+      "last_updated": "2025-11-03T08:10:16.198829Z",
+      "product_tags": ["Chroma", "Authorization", "RBAC"],
+      "key_topics": ["Multi-user Authorization", "Stateless Server Architecture"],
+      "api_symbols": ["ServerAuthorizationProvider", "ChromaAuthzMiddleware"]
+    }
+  },
+  {
+    "doc_id": "chroma_docs__full-text-search.md",
+    "source_path": "/Users/ben/code/neumann/test_data/chroma_docs/full-text-search.md",
+    "score": 0.4333,
+    "sem_score": 0.4333,
+    "lex_score": 0.0,
+    "rrf_score": 0.0164,
+    "lex_term_hits": 0,
+    "lex_regex_hits": 0,
+    "page_uris": [
+      "http://127.0.0.1:8000/out/chroma_docs__full-text-search.md/pages/full-text-search-p001.webp"
     ],
     "line_start": null,
     "line_end": null,
     "why": [
-      "semantic match to query: 'chat route nextjs'",
-      "distance=0.913"
+      "semantic match to query: 'search pipeline'",
+      "distance=1.308"
     ],
     "metadata": {
-      "language": "typescript",
-      "last_updated": "2025-11-23T01:06:21.961219Z",
-      "product_tags": [
-        "Next.js",
-        "API Route",
-        "TypeScript",
-        "Streaming API"
-      ],
-      "key_topics": [
-        "Chat Message Parsing",
-        "Streaming UI Responses",
-        "MCP Server Client",
-        "Error Handling in API"
-      ],
-      "api_symbols": [
-        "POST",
-        "extractUserMessage",
-        "createTextChunkWriter"
-      ],
-      "suggested_queries": [
-        "How does the MCP 'converse' tool interact with this API?",
-        "Explain createUIMessageStream and its usage"
-      ]
+      "language": "markdown",
+      "last_updated": "2025-11-23T01:06:54.965205Z",
+      "product_tags": ["Full Text Search", "Regular Expressions"],
+      "key_topics": ["Full-text search operators", "Regex filtering"]
     }
   }
 ]
