@@ -16,44 +16,67 @@ We have a hybrid search engine (Neumann) that indexes code and markdown. We need
 
 The UI **MUST** strictly adhere to this JSON structure.
 
-### A. Search Response (`POST /api/v1/hybrid`)
+### A. Search Response (`POST /api/v1/search/hybrid`)
 The core list of results.
 ```json
 [
   {
-    "doc_id": "src_utils_logger_py",
-    "source_path": "src/utils/logger.py",
-    "score": 0.925,               // Combined score (0-1)
-    "sem_score": 0.88,            // Semantic vector score
-    "lex_score": 1.0,             // Lexical score
-    "rrf_score": 0.15,            // Rank fusion score
+    "doc_id": "app__api__chat__route.ts",
+    "source_path": "/Users/ben/code/neumann/test_data/app/api/chat/route.ts",
+    "score": 0.5227,
+    "sem_score": 0.5227,
+    "lex_score": 0.0,
+    "rrf_score": 0.0163,
     "page_uris": [
-      "/api/v1/assets/src_utils_logger_py/pages/src_utils_logger_py-p001.webp"
+      "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p001.webp",
+      "http://127.0.0.1:8000/api/v1/assets/app__api__chat__route.ts/pages/route-p002.webp"
     ],
-    "line_start": 12,             // Highlight start (nullable)
-    "line_end": 45,               // Highlight end (nullable)
+    "line_start": null,
+    "line_end": null,
     "why": [
-      "matched term: 'Logger' x4",
-      "matched regex: 'def log_error' x1",
-      "semantic match to query: 'error handling'"
+      "semantic match to query: 'chat route nextjs'",
+      "distance=0.913"
     ],
     "metadata": {
-      "language": "python",
-      "last_updated": "2025-11-20T14:00:00Z"
+      "language": "typescript",
+      "last_updated": "2025-11-23T01:06:21.961219Z",
+      "product_tags": [
+        "Next.js",
+        "API Route",
+        "TypeScript",
+        "Streaming API"
+      ],
+      "key_topics": [
+        "Chat Message Parsing",
+        "Streaming UI Responses",
+        "MCP Server Client",
+        "Error Handling in API"
+      ],
+      "api_symbols": [
+        "POST",
+        "extractUserMessage",
+        "createTextChunkWriter"
+      ],
+      "suggested_queries": [
+        "How does the MCP 'converse' tool interact with this API?",
+        "Explain createUIMessageStream and its usage"
+      ]
     }
   }
 ]
 ```
 
-### B. Chunks Response (`GET /api/v1/{doc_id}/chunks`)
+### B. Chunks Response (`GET /api/v1/docs/{doc_id}/chunks`)
 For deep inspection.
 ```json
 [
   {
-    "chunk_id": "src_utils_logger_py#L1-L50",
-    "text": "class Logger:\n    def __init__(self):...",
+    "chunk_id": "app__api__chat__route.ts#L1-L150",
+    "doc_id": "app__api__chat__route.ts",
+    "text": "import { createUIMessageStream } from \"ai\";\nimport { NextRequest, NextResponse } from \"next/server\";\n...",
+    "source_path": "/Users/ben/code/neumann/test_data/app/api/chat/route.ts",
     "line_start": 1,
-    "line_end": 50
+    "line_end": 150
   }
 ]
 ```

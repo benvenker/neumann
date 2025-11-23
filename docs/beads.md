@@ -200,7 +200,7 @@ bd show nm-a1b2                   # Human-readable
 ### Updating Issues
 
 ```bash
-bd update <id> --status in_progress --json
+bd update <id> --description "New description" --json
 bd update <id> --status blocked --json
 bd update <id> --status closed --json
 bd update <id> --priority 1 --json

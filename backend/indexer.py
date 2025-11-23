@@ -808,6 +808,9 @@ def hybrid_search(
         page_uris = _merge_unique_ordered((lex_match or {}).get("page_uris"), (sem_match or {}).get("page_uris"))
         line_start = (lex_match or {}).get("line_start") or (sem_match or {}).get("line_start")
         line_end = (lex_match or {}).get("line_end") or (sem_match or {}).get("line_end")
+        
+        # Merge metadata (prefer semantic for rich summary data, fallback to lexical)
+        metadata = (sem_match or {}).get("metadata") or (lex_match or {}).get("metadata") or {}
 
         # Concatenate why signals
         why: list[str] = []
@@ -828,6 +831,7 @@ def hybrid_search(
                 "line_start": line_start,
                 "line_end": line_end,
                 "why": why,
+                "metadata": metadata,
             }
         )
 
