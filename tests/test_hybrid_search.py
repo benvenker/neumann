@@ -495,3 +495,143 @@ def test_hybrid_with_path_only_lexical(tmp_path: Path) -> None:
         f"Combined score {doc1_result['score']:.4f} should be > "
         f"{expected_min:.4f} (w_semantic * sem_score) due to path baseline"
     )
+
+
+def test_hybrid_enrichment_lexical_only(tmp_path: Path) -> None:
+    """Verify lexical-only matches are enriched with metadata from search_summaries."""
+    client = get_client(str(tmp_path / "chroma"))
+
+    # Upsert a document with rich metadata to search_summaries
+    # This document will NOT be found by semantic search (we won't query for it)
+    upsert_summaries(
+        [
+            {
+                "id": "doc_enriched",
+                "document": "Rich metadata document that semantic search won't find",
+                "metadata": {
+                    "doc_id": "doc_enriched",
+                    "source_path": "src/legacy.ts",
+                    "product_tags": "legacy-code, deprecated",
+                    "key_topics": "refactoring",
+                    "page_uris": "http://example.com/legacy-p1.webp",
+                },
+            },
+        ],
+        client=client,
+        embedding_function=fake_embedding_function,
+    )
+
+    # Upsert a code chunk for the same document to search_code
+    # This WILL be found by lexical search
+    upsert_code_chunks(
+        [
+            {
+                "id": "chunk_legacy",
+                "document": "function oldMagic() { return 42; }",
+                "metadata": {
+                    "doc_id": "doc_enriched",
+                    "source_path": "src/legacy.ts",
+                    "lang": "ts",
+                    "line_start": 100,
+                    "line_end": 105,
+                    # Note: search_code usually has less metadata
+                    "page_uris": "http://example.com/legacy-p1.webp",
+                },
+            },
+        ],
+        client=client,
+    )
+
+    # Run hybrid search with a lexical query that matches the code chunk
+    # but NO semantic query (so semantic search yields nothing)
+    results = hybrid_search(
+        "",  # Empty query -> semantic search skipped
+        must_terms=["oldMagic"],
+        k=10,
+        client=client,
+        embedding_function=fake_embedding_function,
+    )
+
+    assert len(results) == 1
+    res = results[0]
+    assert res["doc_id"] == "doc_enriched"
+    
+    # Verify rich metadata was merged in
+    meta = res["metadata"]
+    assert "product_tags" in meta
+    assert "legacy-code" in meta["product_tags"]
+    assert "deprecated" in meta["product_tags"]
+    assert "key_topics" in meta
+    assert "refactoring" in meta["key_topics"]
+    
+    # Verify chunk-specific metadata is preserved
+    assert res["line_start"] == 100
+    assert res["line_end"] == 105
+    assert meta["language"] == "ts"
+
+
+def test_hybrid_enrichment_merge_conflict(tmp_path: Path) -> None:
+    """Verify merge logic when both sources have metadata (rich takes precedence for lists/missing)."""
+    client = get_client(str(tmp_path / "chroma"))
+
+    upsert_summaries(
+        [
+            {
+                "id": "doc_merge",
+                "document": "Doc for merge test",
+                "metadata": {
+                    "doc_id": "doc_merge",
+                    "source_path": "src/merge.ts",
+                    "product_tags": "rich-tag",
+                    "page_uris": "http://example.com/p1.webp",
+                    "last_updated": "2025-01-01",  # Rich has date
+                },
+            },
+        ],
+        client=client,
+        embedding_function=fake_embedding_function,
+    )
+
+    upsert_code_chunks(
+        [
+            {
+                "id": "chunk_merge",
+                "document": "const x = 1;",
+                "metadata": {
+                    "doc_id": "doc_merge",
+                    "source_path": "src/merge.ts",
+                    "page_uris": "http://example.com/p2.webp", # Different URI
+                    "last_updated": "2024-01-01", # Stale date
+                },
+            },
+        ],
+        client=client,
+    )
+
+    # Hybrid search: Lexical only finds it
+    results = hybrid_search(
+        "",
+        must_terms=["const"],
+        k=10,
+        client=client,
+        embedding_function=fake_embedding_function,
+    )
+
+    assert len(results) == 1
+    res = results[0]
+    meta = res["metadata"]
+
+    # page_uris should be union of both (p1 and p2)
+    assert "http://example.com/p1.webp" in meta["page_uris"]
+    assert "http://example.com/p2.webp" in meta["page_uris"]
+    assert len(meta["page_uris"]) == 2
+
+    # Rich tags should be present
+    assert "rich-tag" in meta["product_tags"]
+
+    # Scalar field conflict: current logic says:
+    # "elif val is not None and (key not in curr or not curr[key]): curr[key] = val"
+    # So if curr has a value ("2024-01-01"), it KEEPs it.
+    # The rich fetch is "fill-in", not "overwrite" for scalars, unless empty.
+    assert meta["last_updated"] == "2024-01-01" 
+

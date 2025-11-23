@@ -370,6 +370,18 @@ def _normalize_metadata_for_chroma(meta: Mapping[str, object] | None) -> dict[st
     return out
 
 
+def _normalize_read_metadata(meta: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Normalize metadata from Chroma read (flat strings) to API format (lists, etc.)."""
+    m = meta or {}
+    out: dict[str, Any] = {
+        "language": m.get("language") or m.get("lang"),
+        "last_updated": m.get("last_updated"),
+    }
+    for key in NORMALIZED_META_LIST_KEYS:
+        out[key] = _parse_meta_list(m.get(key))
+    return out
+
+
 def _distance_to_score(d: float | None) -> float:
     """Convert Chroma distance to a bounded [0,1] relevance score (higher is better).
 
@@ -559,14 +571,10 @@ def lexical_search(
         doc_len = int(metrics.get("doc_len", 0))
 
         # Normalize metadata (same shape as semantic_search)
-        metadata_norm = {
-            "language": meta_dict.get("language") or meta_dict.get("lang"),
-            "last_updated": meta_dict.get("last_updated"),
-        }
-        for key in NORMALIZED_META_LIST_KEYS:
-            metadata_norm[key] = _parse_meta_list(meta_dict.get(key))
+        metadata_norm = _normalize_read_metadata(meta_dict)
 
         page_uris = metadata_norm.get("page_uris", [])
+
 
         results.append(
             {
@@ -681,12 +689,7 @@ def semantic_search(
             why.append(f"distance={dist:.3f}")
 
         # Normalize selected known list-like fields in metadata for consumers
-        metadata_norm = {
-            "language": meta.get("language") or meta.get("lang"),
-            "last_updated": meta.get("last_updated"),
-        }
-        for key in NORMALIZED_META_LIST_KEYS:
-            metadata_norm[key] = _parse_meta_list(meta.get(key))
+        metadata_norm = _normalize_read_metadata(meta)
 
         # Note: page_uris appears both top-level (for convenience) and in metadata (for completeness)
         out.append(
@@ -768,6 +771,47 @@ def hybrid_search(
         if run_lexical
         else []
     )
+
+    # 1. Identify Lexical-Only matches
+    sem_ids = {str(r["doc_id"]) for r in sem_results}
+    lex_only_ids = {str(r["doc_id"]) for r in lex_results if str(r["doc_id"]) not in sem_ids}
+
+    # 2. Fill-In Fetch: Get rich metadata for lexical-only matches
+    if lex_only_ids:
+        try:
+            summaries_col, _ = get_collections(client)
+            # Fetch metadata only for these IDs
+            fetched = summaries_col.get(ids=list(lex_only_ids), include=["metadatas"])
+            
+            # Map doc_id -> Normalized Rich Metadata
+            rich_map: dict[str, dict[str, Any]] = {}
+            f_ids = fetched.get("ids", [])
+            f_metas = fetched.get("metadatas", [])
+            # f_ids is list[str], f_metas is list[dict | None]
+            if f_ids and f_metas:
+                for i, fid in enumerate(f_ids):
+                    if i < len(f_metas):
+                        rich_map[fid] = _normalize_read_metadata(f_metas[i])
+
+            # 3. Enrich Lexical Results
+            for res in lex_results:
+                did = str(res["doc_id"])
+                if did in rich_map:
+                    rich = rich_map[did]
+                    curr = res["metadata"]
+                    # Merge rich metadata into current lean metadata
+                    for key, val in rich.items():
+                        if key == "page_uris":
+                            # Merge lists uniquely
+                            curr[key] = _merge_unique_ordered(curr.get(key), val)
+                        elif isinstance(val, list) and val:
+                            # Prefer rich list if present
+                            curr[key] = val
+                        elif val is not None and (key not in curr or not curr[key]):
+                            # Fill in missing scalar fields
+                            curr[key] = val
+        except Exception as e:
+            logger.warning("Failed to perform fill-in fetch for rich metadata: %s", e)
 
     # Build rank maps (first occurrence per doc_id)
     sem_rank_by_doc: dict[str, int] = {}
