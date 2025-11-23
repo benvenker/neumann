@@ -10,6 +10,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .deps import get_settings
 from .routes import api_router
@@ -47,6 +48,14 @@ def create_app() -> FastAPI:
             allow_headers=["*"],
             allow_credentials=True,
         )
+
+    # Mount static assets (rendered WebP pages, etc.)
+    # Served at /api/v1/assets to match the configured ASSET_BASE_URL logic
+    if cfg.output_path.exists():
+        app.mount("/api/v1/assets", StaticFiles(directory=str(cfg.output_path)), name="assets")
+        logger.info(f"Mounted static assets from {cfg.output_path} at /api/v1/assets")
+    else:
+        logger.warning(f"Output path {cfg.output_path} does not exist; static assets not mounted")
 
     # Include versioned API router
     app.include_router(api_router, prefix="/api/v1")

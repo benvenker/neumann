@@ -17,7 +17,7 @@ These protocols are **MANDATORY**. Violations will break the workflow.
 - **See**: [`scripts/AGENTS.md`](scripts/AGENTS.md) for naming conventions.
 
 ### B. Work Tracking (`Beads`)
-- **Protocol**: **PRIORITIZE** `mcp__beads__*` tools for all issue tracking. Use `bd` CLI **only** as a fallback.
+- **Protocol**: Use the **`bd` CLI** for all issue tracking. Always use the `--json` flag for machine-readable output.
 - **Forbidden**: Manually editing `.beads/` files or using GitHub Issues.
 - **See**: [`docs/beads.md`](docs/beads.md) for the full command reference.
 
