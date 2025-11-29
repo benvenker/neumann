@@ -9,7 +9,7 @@ import pytest
 class _ProgressReporter:
     """Pytest plugin that prints per-test start and end markers with timing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._terminal = None
         self._starts: dict[str, float] = {}
 
@@ -19,7 +19,9 @@ class _ProgressReporter:
             self._terminal = session.config.pluginmanager.get_plugin("terminalreporter")
 
     @pytest.hookimpl
-    def pytest_runtest_logstart(self, nodeid: str, location) -> None:
+    def pytest_runtest_logstart(
+        self, nodeid: str, _location: tuple[str, int | None, str | None] | None
+    ) -> None:
         if self._terminal is None:
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -27,7 +29,7 @@ class _ProgressReporter:
         self._terminal.write_line(f"[{timestamp}] RUN    {nodeid}")
 
     @pytest.hookimpl
-    def pytest_runtest_logreport(self, report: pytest.TestReport):
+    def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
         if self._terminal is None or report.when != "call":
             return
         timestamp = datetime.now().strftime("%H:%M:%S")
