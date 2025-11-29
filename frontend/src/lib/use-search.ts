@@ -98,6 +98,14 @@ export function useSearch(): UseSearchState {
     const effectiveMode = deriveMode(hasOpenAiKey, trimmedQuery, hasLexInner);
 
     try {
+      if (!hasOpenAiKey && hasSem && !hasLexInner) {
+        throw new ApiError(
+          400,
+          "validation",
+          "Semantic search is unavailable without OPENAI_API_KEY. Add must_terms/regex/path filters or configure a key.",
+        );
+      }
+
       if (!hasSem && !hasLexInner) {
         throw new ApiError(400, "validation", "Provide a query or at least one lexical filter");
       }
@@ -163,4 +171,3 @@ export function useSearch(): UseSearchState {
     clearResults,
   };
 }
-
