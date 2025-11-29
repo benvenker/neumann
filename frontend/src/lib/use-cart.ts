@@ -62,7 +62,7 @@ export function useCart(): UseCartState {
   const reorder = useCallback((fromIndex: number, toIndex: number) => {
     setItems((prev) => {
       const next = [...prev];
-      if (fromIndex < 0 || fromIndex >= next.length || toIndex < 0 || toIndex >= next.length) {
+      if (fromIndex < 0 || fromIndex >= next.length || toIndex < 0 || toIndex > next.length) {
         return next;
       }
       const [moved] = next.splice(fromIndex, 1);
@@ -86,4 +86,3 @@ export function useCart(): UseCartState {
     isInCart,
   };
 }
-
